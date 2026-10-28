@@ -198,7 +198,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "EhvYmMrVZcXYXW70HSSXkw==", "iter": 600000, "check": "fU0IrwUD5mm2pfi5U2IKuu9XZtvDff0kQAqLAhw/WDfsMmfNTijfjMb5F9vi+ihYNtinrA=="}</script>
+<script>window.__site={"salt": "tyiRhCnV8wY+Ajzg99nf6g==", "iter": 600000, "check": "kSOtCppRNRbyDjCoFP9LReFlchk5SF3f1YtPODPf0AbSikK1CSEfcOSDcLDFswQeupVpkA=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -459,15 +459,14 @@ function nearest(pts, x, y) {
   return [best[0], best[1]];
 }
 
-// 2차 베지어 곡선 (진행 방향 오른쪽으로 휨). 끝은 도착점 몇 km 앞에서 멈춰 화살촉이 중심지를 덮지 않게
+// 2차 베지어 곡선 (진행 방향 오른쪽으로 휨). 화살 끝 = 도착점
 function curve(a, b) {
   const k = Math.cos(((a[1] + b[1]) / 2) * Math.PI / 180);
   const ax = a[0] * k, ay = a[1], bx = b[0] * k, by = b[1], dx = bx - ax, dy = by - ay;
   const cx = (ax + bx) / 2 + dy * 0.2, cy = (ay + by) / 2 - dx * 0.2;
-  const km = Math.hypot(dx, dy) * 111, tEnd = 1 - Math.min(0.08, 3 / Math.max(km, 1));
   const pts = [];
   for (let i = 0; i <= 40; i++) {
-    const t = (i / 40) * tEnd, u = 1 - t;
+    const t = i / 40, u = 1 - t;
     pts.push([(u * u * ax + 2 * u * t * cx + t * t * bx) / k, u * u * ay + 2 * u * t * cy + t * t * by]);
   }
   return pts;
@@ -475,15 +474,16 @@ function curve(a, b) {
 const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const heading = (p, q) => (Math.atan2(merc(q[1]) - merc(p[1]), ((q[0] - p[0]) * Math.PI) / 180) * 180) / Math.PI;
 
-// 출발점 = 출발 격자 유입량 가중 중심(가장 가까운 격자), 도착점 = 덩어리 대표점 또는 도착 생활권 중심
+// 출발점 = 출발 격자 유입량 가중 중심(가장 가까운 격자), 도착점 = 그 묶음을 가장 많이 받는 덩어리 대표점 또는 도착 생활권 중심.
+// (가중 중심에 가장 가까운 덩어리로 하면 큰 덩어리들 사이의, 거의 안 받는 작은 덩어리를 가리킬 수 있다)
 function place(b) {
   b.src = nearest(b.gridPts, b.cx, b.cy);
   const dest = state.dir === "in" ? state.rid : RID[b.o];
   if (state.dmode === "region") b.dst = [regionBy[dest].properties.cx, regionBy[dest].properties.cy];
   else {
-    let tx = 0, ty = 0, w = 0;
-    for (const [p, v] of b.parts) { tx += state.partOf[p].rep_lon * v; ty += state.partOf[p].rep_lat * v; w += v; }
-    b.dst = nearest([...b.parts.keys()].map((p) => [state.partOf[p].rep_lon, state.partOf[p].rep_lat]), tx / w, ty / w);
+    let top = null, mv = -1;
+    for (const [p, v] of b.parts) if (v > mv) { mv = v; top = p; }
+    b.dst = [state.partOf[top].rep_lon, state.partOf[top].rep_lat];
   }
   b.path = curve(b.src, b.dst);
   b.angle = heading(b.path[39], b.path[40]);
@@ -570,6 +570,19 @@ function layers() {
       fontFamily: "IBM Plex Sans KR, Malgun Gothic, sans-serif", fontWeight: 500, updateTriggers: { getColor: D.theme } }));
   }
 
+  // 중심지 (화살표 아래): 유입이면 이 생활권 덩어리(눌러서 하나만), 유출이면 화살표가 닿는 상대 생활권 덩어리
+  const own = rid ? state.centersBy[rid] : [];
+  const cdata = state.dir === "in" ? own : [...own, ...D.shown.flatMap((b) => state.centersBy[RID[b.o]] || [])];
+  out.push(new deck.GeoJsonLayer({ id: "centers", data: cdata, pickable: state.dir === "in", filled: true, stroked: true,
+    getFillColor: (f) => {
+      if (state.dir === "out") return A(C.fg, f.properties.rid === rid ? 70 : 170);
+      return A(C.fg, state.part == null || f.properties.part === state.part ? 170 : 55);
+    },
+    getLineColor: (f) => f.properties.part === state.part ? rgb(css(`--${state.ds}`)) : A(C.panel, 230),
+    getLineWidth: (f) => f.properties.part === state.part ? 2.5 : 1, lineWidthUnits: "pixels",
+    autoHighlight: state.dir === "in", highlightColor: A(C.fg, 220),
+    updateTriggers: { getFillColor: trig, getLineColor: trig, getLineWidth: trig } }));
+
   // 격자 상세: 고른 상대 생활권 묶음의 1km 출발 격자
   const fb = foc != null ? D.byO.get(foc) : null;
   if (fb) {
@@ -600,24 +613,11 @@ function layers() {
     getSize: (b) => W(b.v) * 1.6 + 9, sizeUnits: "pixels", getColor: (b) => A(b.color, dim(b) ? 40 : 240),
     updateTriggers: { getColor: trig, getSize: trig } }));
 
-  // 중심지: 유입이면 이 생활권 덩어리(눌러서 하나만), 유출이면 화살표가 닿는 상대 생활권 덩어리
-  const own = rid ? state.centersBy[rid] : [];
-  const cdata = state.dir === "in" ? own : [...own, ...D.shown.flatMap((b) => state.centersBy[RID[b.o]] || [])];
-  out.push(new deck.GeoJsonLayer({ id: "centers", data: cdata, pickable: state.dir === "in", filled: true, stroked: true,
-    getFillColor: (f) => {
-      if (state.dir === "out") return A(C.fg, f.properties.rid === rid ? 70 : 170);
-      return A(C.fg, state.part == null || f.properties.part === state.part ? 170 : 55);
-    },
-    getLineColor: (f) => f.properties.part === state.part ? rgb(css(`--${state.ds}`)) : A(C.panel, 230),
-    getLineWidth: (f) => f.properties.part === state.part ? 2.5 : 1, lineWidthUnits: "pixels",
-    autoHighlight: state.dir === "in", highlightColor: A(C.fg, 220),
-    updateTriggers: { getFillColor: trig, getLineColor: trig, getLineWidth: trig } }));
-  if (rid && state.dmode === "region") {
-    const pts = state.dir === "in" ? [rid] : D.shown.map((b) => RID[b.o]);
-    out.push(new deck.ScatterplotLayer({ id: "dest-pt", data: pts, getPosition: (r) => [regionBy[r].properties.cx, regionBy[r].properties.cy],
-      getRadius: 6, radiusUnits: "pixels", getFillColor: C.fg, stroked: true, getLineColor: C.panel, getLineWidth: 2, lineWidthUnits: "pixels",
-      updateTriggers: { getFillColor: D.theme } }));
-  }
+  // 도착점 표시 (화살 끝이 모이는 덩어리 대표점 또는 생활권 중심)
+  const dests = [...new Map(D.shown.map((b) => [b.dst.join(), b.dst])).values()];
+  out.push(new deck.ScatterplotLayer({ id: "dest-pt", data: dests, getPosition: (p) => p, getRadius: 4.5, radiusUnits: "pixels",
+    getFillColor: C.fg, stroked: true, getLineColor: C.panel, getLineWidth: 2, lineWidthUnits: "pixels",
+    updateTriggers: { getFillColor: D.theme, getLineColor: D.theme } }));
 
   // 상대 생활권 이름 (상위 5곳 + 고른 곳·가리킨 곳). 유출이면 도착 쪽에 붙임
   const named = D.shown.filter((b) => D.list.indexOf(b) < 5 || b.o === foc || b.o === hov);
