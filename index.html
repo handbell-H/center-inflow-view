@@ -198,7 +198,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "NYH6mb52jJdIXvlywi1bBw==", "iter": 600000, "check": "D2Ex8/HMA/VHUXn8aV6LGgdjyONuII+Hm360B/B34kuwglKkFu7cIKeQIkD9wAZ0yfhXyg=="}</script>
+<script>window.__site={"salt": "EhvYmMrVZcXYXW70HSSXkw==", "iter": 600000, "check": "fU0IrwUD5mm2pfi5U2IKuu9XZtvDff0kQAqLAhw/WDfsMmfNTijfjMb5F9vi+ihYNtinrA=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -227,7 +227,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   };
   const tryPw = async (pw) => { const key = await derive(pw); await open(key, b64(S.check).buffer); return key; };
   window.__load = async (k) => {
-    const key = await keyP, r = await fetch(`data/${k}.bin`);
+    const key = await keyP, r = await fetch(`data/${k}.bin?v=${encodeURIComponent(S.salt)}`); // 게시마다 salt 가 바뀌어 옛 캐시를 안 씀
     if (!r.ok) throw new Error(`data/${k}.bin 를 읽지 못했습니다 (${r.status})`);
     return JSON.parse(await open(key, await r.arrayBuffer()));
   };
