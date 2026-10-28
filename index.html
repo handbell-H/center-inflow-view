@@ -55,7 +55,8 @@ h2 { font-size: 18px; font-weight: 700; margin: 0; text-wrap: balance; }
 button:focus-visible, input:focus-visible, select:focus-visible, li:focus-visible, tr:focus-visible { outline: 2px solid var(--ds); outline-offset: 2px; }
 select, input[type=number], input[type=search] { font: 13px var(--font); width: 100%; box-sizing: border-box; padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); }
 input[type=number] { font-family: var(--mono); }
-.link { font: inherit; font-size: 12px; border: 0; padding: 0; margin-left: 4px; background: none; color: var(--fg); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.tp-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.link { font: inherit; font-size: 12px; border: 0; padding: 0; white-space: nowrap; background: none; color: var(--fg); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 dialog { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--fg); padding: 20px 22px; width: min(520px, calc(100% - 32px)); box-sizing: border-box; }
 dialog::backdrop { background: rgb(0 0 0 / 0.35); }
 dialog h2 { margin-bottom: 4px; }
@@ -117,7 +118,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   <aside>
     <header>
       <h1>대한민국 통근시간대 통행 흐름으로 본 도시생활권</h1>
-      <p class="sub">2025 · 생활권(목표 자족도 75%) · 중심지Ⅰ·Ⅱ <button id="src-b" class="link" type="button">데이터 출처</button></p>
+      <p class="sub">2025 · 생활권(목표 자족도 75%) · 중심지Ⅰ·Ⅱ</p>
     </header>
 
     <section id="sel" hidden>
@@ -160,7 +161,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     </section>
 
     <section>
-      <label class="label" for="thr-num" id="thr-l">임계치 (이상만 표시)</label>
+      <label class="label" for="thr-num" id="thr-l">임계치 (일정 통행량 이상)</label>
       <div class="thr">
         <input id="thr-range" type="range" min="0" max="1000" step="1" aria-label="임계치 슬라이더">
         <input id="thr-num" type="number" min="0" step="any">
@@ -216,7 +217,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </dialog>
 
   <section class="tpanel">
-    <h2 id="tbl-title">상대 생활권</h2>
+    <div class="tp-head"><h2 id="tbl-title">상대 생활권</h2><button id="src-b" class="link" type="button">데이터 출처</button></div>
     <div class="twrap">
       <table>
         <thead id="thead"></thead>
@@ -227,7 +228,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "qHwxcXhxrjMRrN4iBRIzQQ==", "iter": 600000, "check": "y7D7OW3zUj55a6NAAmWaolCM8hONZ90kGd8hzY/Sw8c9O7qyyDWJ2uvkR33EaIshYL+BtA=="}</script>
+<script>window.__site={"salt": "mXd+/7Rh4pnfIUPX7eahBw==", "iter": 600000, "check": "jo7zAdb1pP3TqYccqywPskp2T0ubGdDnrHYhe2GfKXNL334sH1zJZ8qslgWvzoQKMZN6JA=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -277,7 +278,8 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
 // KT 값 = 화·수·목 하루 07~09시 평균 통행 = 원본 VOL_AVE(VOL÷24, 12일×2시간 시간평균) × 2 = VOL÷12
 const KT_F = 2;
 // 임계치: 유입·유출은 생활권 묶음 값, 내부(i*)는 1km 격자 점·덩어리 사이 화살표 값
-const DEFAULT_THR = { kt: 10, kcb: 100, cmp: 1, ikt: 1, ikcb: 5, icmp: 0.1 };
+// g* = 선을 눌러 1km 격자 화살표를 볼 때 그 격자 화살표에 거는 임계치 (비교면 그 묶음 안 비중 %)
+const DEFAULT_THR = { kt: 10, kcb: 100, cmp: 1, ikt: 1, ikcb: 5, icmp: 0.1, gkt: 0.5, gkcb: 1, gcmp: 0.5 };
 const KINDS = { pc: "주변부 → 중심지", cp: "중심지 → 주변부", ccx: "중심지 ↔ 중심지 (덩어리 사이)", ccs: "같은 덩어리 안", pp: "주변부 ↔ 주변부" };
 // 범주 8색 (dataviz 기본 팔레트, 라이트/다크 각각 검증된 단계)
 const CAT = {
@@ -288,13 +290,16 @@ const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas";
 const TILES = { light: "World_Light_Gray_Base", dark: "World_Dark_Gray_Base" };
 const ARROW = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><path d='M2 6 L64 32 L2 58 L14 32 Z' fill='#fff'/></svg>");
 const state = { ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
-  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "part" };
+  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "region" };
 const fac = (ds = state.ds) => (ds === "kt" ? KT_F : 1);
 const unit = () => (state.ds === "cmp" ? "%" : state.ds === "kt" ? "통행" : "명");
 const short = (n) => n.replace(/생활권$/, "권"); // 서울·광명생활권 → 서울·광명권
 const cmp = () => state.ds === "cmp";
 const inner = () => state.dir === "int";
-const tk = () => (inner() ? "i" : "") + state.ds; // 임계치 키
+const detailOn = () => !inner() && state.focusO != null;
+const bk = () => (inner() ? "i" : "") + state.ds; // 화살표(묶음·내부) 임계치 키
+const gk = () => "g" + state.ds; // 누른 묶음의 1km 격자 화살표 임계치 키
+const tk = () => (detailOn() ? gk() : bk()); // 슬라이더가 지금 조절하는 임계치
 let regions, centers, summary, labels, G, vec, deckgl, rname = [], RID = [], statById = {}, ridIdx = {}, regionBy = {};
 let D = { list: [], shown: [], trips: [], dots: [], dotsShown: [], byO: new Map(), max: 1, total: 0 };
 
@@ -372,7 +377,7 @@ async function init() {
     onClick: (info) => {
       const id = info.layer?.id;
       if (id === "arrows" || id === "heads") toggleFocus(info.object.o);
-      else if (id === "centers") togglePart(info.object.properties.part);
+      else if (id === "centers") { if (state.dir !== "out") togglePart(info.object.properties.part); }
       else if (id === "regions") select(info.object.properties.rid);
     },
   });
@@ -432,7 +437,8 @@ function syncControls(updateRange = true) {
   const v = state.thr[tk()];
   if (updateRange) $("thr-range").value = toSlider(v);
   $("thr-num").value = v;
-  $("thr-l").textContent = `임계치 · ${cmp() ? "평균 비중 %" : unit()} 이상${inner() && state.kind !== "cc" ? " (1km 격자)" : ""}`;
+  $("thr-l").textContent = detailOn() ? `임계치 (누른 흐름의 1km 격자 · ${cmp() ? "흐름 안 비중 %" : "일정 통행량"} 이상)`
+    : `임계치 (일정 ${cmp() ? "비중 %" : "통행량"} 이상)`;
   document.documentElement.style.setProperty("--ds", `var(--${state.ds})`);
   document.documentElement.dataset.mode = state.dir;
   for (const [attr, key] of [["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"]])
@@ -443,13 +449,10 @@ function syncControls(updateRange = true) {
   $("attr").textContent = state.bm === "tile" ? "© Esri, HERE, Garmin, © OpenStreetMap contributors" : "SGIS 행정구역 2025.6";
   const rel = state.dir === "in" ? "출발" : "도착", size = cmp() ? "KT·KCB 평균 비중" : "통근량";
   $("lg-a").textContent = !inner() ? (cmp() ? "굵기 = KT·KCB 평균 비중" : `굵기 = ${state.dir === "in" ? "유입" : "유출"}량 · 색 = ${rel} 생활권`)
-    : { pc: `점 = 주변부 출발 격자 · 크기 = ${size}${cmp() ? "" : " · 색 = 주로 가는 중심지"}`,
-        cp: `점 = 주변부 도착 격자 · 크기 = ${size}${cmp() ? "" : " · 색 = 주로 오는 중심지"}`,
-        cc: `굵기 = 덩어리 사이 ${size}${cmp() ? "" : " · 색 = 출발 중심지"}`,
-        pp: `점 = 주변부 격자 · 크기 = 다른 주변부로 가는 ${size}` }[state.kind];
+    : `굵기 = ${size}${cmp() ? "" : { pc: " · 색 = 도착 중심지", cp: " · 색 = 출발 중심지", cc: " · 색 = 출발 중심지", pp: "" }[state.kind]}`;
   $("lg-cmp").hidden = !cmp();
   $("lg-cmp-t").textContent = `KCB 비중 큼 · 비슷 · KT 비중 큼 (${inner() ? "상대 차이" : "±5%p"})`;
-  $("lg-c").textContent = inner() ? "중심지 (번호 = 큰 순, 눌러서 하나만)" : state.dir === "in" ? "중심지 (눌러서 덩어리만 보기)" : "도착 중심지";
+  $("lg-c").textContent = state.dir === "out" ? "도착 중심지 (마우스 올리면 이름)" : "중심지 (마우스 올리면 이름, 누르면 그 중심지만)";
 }
 
 function renderList() {
@@ -527,8 +530,8 @@ function place(b) {
   b.angle = heading(b.path[39], b.path[40]);
 }
 
-// ── 생활권 내부: 주변부(1km 격자)·중심지 덩어리 사이 ──────────────────────
-// int 표: pc [주변 격자, 덩어리, 값] · cp [덩어리, 주변 격자, 값] · cc [덩어리, 덩어리, 값] · pp [주변 격자, 출발 합, 도착 합]
+// ── 생활권 내부: 주변부(1km 격자)·중심지 덩어리 사이 — 행마다 화살표 ───────────────
+// int 표 (행 = [출발, 도착, 값]): pc [주변 격자, 덩어리] · cp [덩어리, 주변 격자] · cc [덩어리, 덩어리] · pp [주변 격자, 주변 격자]
 function internalOf(ds) {
   const I = state.flows[state.rid].int[ds], f = fac(ds), part = state.part, kind = state.kind;
   const kinds = { pc: 0, cp: 0, ccx: 0, ccs: 0, pp: 0 }, byPart = new Map();
@@ -539,29 +542,13 @@ function internalOf(ds) {
     kinds[a === b ? "ccs" : "ccx"] += v * f;
     if (kind === "cc" && a !== b) { addPart(a, v * f); addPart(b, v * f); }
   }
-  for (const [, o] of I.pp) kinds.pp += o * f;
-  let items;
-  if (kind === "cc") {
-    // 덩어리 사이 화살표 (같은 덩어리 안은 표에만). 키는 생활권 idx 와 안 겹치게 (a+1)*1e5+b
-    items = I.cc.filter(([a, b]) => a !== b && (part == null || a === part || b === part))
-      .map(([a, b, v]) => ({ o: (a + 1) * 100000 + b, a, b, v: v * f }));
-  } else if (kind === "pp") {
-    items = I.pp.filter(([, o]) => o > 0).map(([g, o]) => ({ o: g, v: o * f }));
-  } else {
-    // 주변부 격자마다 합 + 가장 많이 오가는 덩어리
-    const by = new Map();
-    for (const r of I[kind]) {
-      const [g, p] = kind === "pc" ? [r[0], r[1]] : [r[1], r[0]], v = r[2] * f;
-      if (part != null && p !== part) continue;
-      let d = by.get(g);
-      if (!d) by.set(g, (d = { o: g, v: 0, parts: new Map() }));
-      d.v += v; d.parts.set(p, (d.parts.get(p) || 0) + v);
-    }
-    items = [...by.values()].map((d) => {
-      let top = null, mv = -1;
-      for (const [p, v] of d.parts) if (v > mv) { mv = v; top = p; }
-      return { o: d.o, v: d.v, top, topShare: mv / d.v };
-    });
+  for (const [, , v] of I.pp) kinds.pp += v * f;
+  // 화살표. pa/pb = 출발/도착 덩어리 (주변부 격자면 null). 같은 덩어리 안은 표에만. 키 = 종류 안에서 고유
+  const items = [];
+  for (const [a, b, v] of kind === "cc" ? I.cc.filter(([x, y]) => x !== y) : I[kind]) {
+    const pa = kind === "cp" || kind === "cc" ? a : null, pb = kind === "pc" || kind === "cc" ? b : null;
+    if (part != null && kind !== "pp" && pa !== part && pb !== part) continue;
+    items.push({ o: a * 2e5 + b, a, b, pa, pb, v: v * f });
   }
   items.sort((x, y) => y.v - x.v);
   const total = items.reduce((s, d) => s + d.v, 0);
@@ -578,7 +565,7 @@ function rebuildInner() {
     D.items = [...m.values()].map((x) => ({ ...(x.sa >= x.sb ? x.A : x.B), sa: x.sa, sb: x.sb, d: x.sa - x.sb, v: 50 * (x.sa + x.sb), share: (x.sa + x.sb) / 2 }))
       .sort((p, q) => q.v - p.v);
     D.kinds = { kt: a.kinds, kcb: k.kinds }; D.byPart = { kt: a.byPart, kcb: k.byPart }; D.total = 100;
-    // 격자 하나의 비중은 아주 작아 %p 차이로는 색이 안 갈림 → 상대 차이 (KT−KCB)/(KT+KCB), ±0.5 에서 최대
+    // 화살표 하나의 비중은 아주 작아 %p 차이로는 색이 안 갈림 → 상대 차이 (KT−KCB)/(KT+KCB), ±0.5 에서 최대
     for (const d of D.items) {
       const t = Math.max(-1, Math.min(1, d.d / (d.sa + d.sb || 1) / 0.5));
       d.color = mix(C.other, t > 0 ? C.kt : C.kcb, Math.abs(t));
@@ -586,17 +573,16 @@ function rebuildInner() {
   } else {
     const r = internalOf(state.ds), dsc = rgb(css(`--${state.ds}`));
     D.items = r.items; D.kinds = { [state.ds]: r.kinds }; D.byPart = { [state.ds]: r.byPart }; D.total = r.total;
-    for (const d of D.items) d.color = state.kind === "cc" ? partColor(d.a) : state.kind === "pp" ? dsc : partColor(d.top);
+    // 색 = 화살표가 닿거나 떠나는 중심지 덩어리 색 (주변↔주변은 데이터 색)
+    for (const d of D.items) d.color = d.pb != null && state.kind !== "cc" ? partColor(d.pb) : d.pa != null ? partColor(d.pa) : dsc;
   }
-  const cc = state.kind === "cc";
+  const at = (g, p) => (p != null ? [state.partOf[p].rep_lon, state.partOf[p].rep_lat] : G[g]);
   for (const d of D.items) {
     d.hex = `rgb(${d.color.slice(0, 3).join(",")})`;
-    if (!cc) { d.pos = G[d.o]; continue; }
-    const pa = state.partOf[d.a], pb = state.partOf[d.b];
-    d.src = [pa.rep_lon, pa.rep_lat]; d.dst = [pb.rep_lon, pb.rep_lat];
+    d.src = at(d.a, d.pa); d.dst = at(d.b, d.pb);
     d.path = curve(d.src, d.dst); d.angle = heading(d.path[39], d.path[40]);
   }
-  D.list = cc ? D.items : []; D.dots = cc ? [] : D.items;
+  D.list = D.items; D.dots = [];
   D.max = D.items.length ? D.items[0].v : 1;
   D.byO = new Map(D.list.map((b) => [b.o, b]));
   applyThreshold();
@@ -640,7 +626,7 @@ function rebuild() {
 }
 
 function applyThreshold() {
-  const t = state.thr[tk()];
+  const t = state.thr[bk()];
   // 유입·덩어리 도착이면 덩어리마다 가장 큰 흐름 하나는 임계치 아래여도 그린다 (작은 중심지도 빠짐없이 화살표를 받게)
   const keep = new Set();
   if (!inner() && state.dir === "in" && state.dmode === "part") {
@@ -656,7 +642,7 @@ function applyThreshold() {
   D.vis = D.shown.filter((b) => b.o !== hide).reverse(); // 큰 흐름이 위
   // 입자: 경로마다 3개, 한 바퀴(0~1) 돌도록 앞뒤로 복제
   D.trips = [];
-  for (const b of D.vis) for (let k = 0; k < 3; k++) for (const s of [0, -1]) {
+  for (const b of D.vis.slice(-400)) for (let k = 0; k < 3; k++) for (const s of [0, -1]) { // 큰 화살표 400개까지만 (성능)
     const off = k / 3 + s;
     D.trips.push({ b, ts: b.path.map((_, j) => off + j / 40) });
   }
@@ -712,7 +698,7 @@ function layers() {
   // 내부 모드는 덩어리마다 색 (주변부 점 색과 같음 → 어느 중심지가 어느 주변부와 엮이는지)
   const own = rid ? state.centersBy[rid] : [];
   const cdata = state.dir === "out" ? [...own, ...[...D.byR.keys()].flatMap((r) => state.centersBy[RID[r]] || [])] : own;
-  out.push(new deck.GeoJsonLayer({ id: "centers", data: cdata, pickable: state.dir !== "out", filled: true, stroked: true,
+  out.push(new deck.GeoJsonLayer({ id: "centers", data: cdata, pickable: true, filled: true, stroked: true,
     getFillColor: (f) => {
       if (state.dir === "out") return A(C.fg, f.properties.rid === rid ? 70 : 170);
       const on = state.part == null || f.properties.part === state.part;
@@ -723,24 +709,21 @@ function layers() {
     autoHighlight: state.dir !== "out", highlightColor: A(C.fg, 220),
     updateTriggers: { getFillColor: trig, getLineColor: trig, getLineWidth: trig } }));
 
-  // 내부: 주변부 1km 격자 점 (크기 = 통근량, 색 = 주로 오가는 덩어리 / 비교면 비중 차이)
-  if (D.dotsShown.length) {
-    out.push(new deck.ScatterplotLayer({ id: "dots", data: D.dotsShown, pickable: true, getPosition: (d) => d.pos,
-      getRadius: (d) => 1.5 + 9 * Math.sqrt(d.v / D.max), radiusUnits: "pixels",
-      getFillColor: (d) => A(d.color, 210), stroked: true, getLineColor: A(C.panel, 200), lineWidthUnits: "pixels", getLineWidth: 0.6,
-      updateTriggers: { getFillColor: trig, getRadius: trig } }));
-  }
-
   // 누른 묶음: 묶음 화살표 대신 1km 출발 격자마다 화살표 (굵기 = 그 격자에서 오는 양) — 유입·유출만
   const fb = foc != null && !inner() ? D.byO.get(foc) : null;
   if (fb) {
     const gmax = Math.max(...fb.gridPts.map((g) => g[2])), gw = (v) => 0.8 + 7 * Math.sqrt(v / gmax);
-    fb.detail ??= fb.gridPts.map(([x, y, v]) => { const path = curve([x, y], fb.dst); return { v, path, angle: heading(path[39], path[40]) }; })
-      .sort((p, q) => p.v - q.v); // 큰 흐름이 위
-    out.push(new deck.PathLayer({ id: "detail", data: fb.detail, pickable: true, getPath: (d) => d.path,
+    const gsum = fb.gridPts.reduce((a, g) => a + g[2], 0);
+    fb.detail ??= fb.gridPts.map(([x, y, v]) => {
+      const path = curve([x, y], fb.dst);
+      return { v, tv: cmp() ? (100 * v) / gsum : v, path, angle: heading(path[39], path[40]) }; // tv = 임계치와 견줄 값
+    }).sort((p, q) => p.v - q.v); // 큰 흐름이 위
+    const gt = state.thr[gk()];
+    if (fb.detThr !== gt) { fb.detThr = gt; fb.detShown = fb.detail.filter((d) => d.tv >= gt); } // 임계치 바뀔 때만 다시 거름
+    out.push(new deck.PathLayer({ id: "detail", data: fb.detShown, pickable: true, getPath: (d) => d.path,
       getColor: A(fb.color, 190), getWidth: (d) => gw(d.v), widthUnits: "pixels", capRounded: true, jointRounded: true,
       updateTriggers: { getColor: trig, getWidth: trig } }));
-    out.push(new deck.IconLayer({ id: "detail-heads", data: fb.detail, iconAtlas: ARROW,
+    out.push(new deck.IconLayer({ id: "detail-heads", data: fb.detShown, iconAtlas: ARROW,
       iconMapping: { a: { x: 0, y: 0, width: 64, height: 64, anchorX: 64, anchorY: 32, mask: true } },
       getIcon: () => "a", getPosition: (d) => d.path[40], getAngle: (d) => d.angle,
       getSize: (d) => gw(d.v) * 1.8 + 5, sizeUnits: "pixels", getColor: A(fb.color, 230), updateTriggers: { getColor: trig, getSize: trig } }));
@@ -772,17 +755,6 @@ function layers() {
     getFillColor: C.fg, stroked: true, getLineColor: C.panel, getLineWidth: 2, lineWidthUnits: "pixels",
     updateTriggers: { getFillColor: D.theme, getLineColor: D.theme } }));
 
-  // 중심지 번호 (표의 '중심지' 열과 같은 번호). 내부: 색 있는 큰 8곳 + 고른 곳, 유입: 이 생활권에서 화살표 받는 곳 + 큰 8곳,
-  // 유출: 화살표가 닿는 상대 생활권 덩어리
-  const recv = new Set(D.shown.map((b) => b.part));
-  const nos = state.dir === "out" ? (state.dmode === "part" ? [...recv].map((p) => state.partFeat[p]) : [])
-    : own.filter((f) => f.properties.no <= 8 || f.properties.part === state.part || (!inner() && recv.has(f.properties.part)));
-  out.push(new deck.TextLayer({ id: "part-no", data: nos, characterSet: "auto", getText: (f) => `${f.properties.no}`,
-    getPosition: (f) => [f.properties.rep_lon, f.properties.rep_lat], getPixelOffset: inner() ? [0, 0] : [0, -12],
-    getSize: 12, getColor: C.fg, fontWeight: 700, fontFamily: "IBM Plex Mono, Consolas, monospace",
-    background: true, backgroundPadding: [5, 2], getBackgroundColor: A(C.panel, 235),
-    getBorderColor: (f) => (inner() && !cmp() ? partColor(f.properties.part) : C.fg), getBorderWidth: 1.5,
-    updateTriggers: { getBackgroundColor: D.theme, getColor: D.theme, getBorderColor: trig, getPixelOffset: trig } }));
   if (inner()) return out;
 
   // 상대 생활권 이름 (합 상위 5곳 + 가리킨·누른 곳, 그 생활권의 가장 큰 화살표에). 유출이면 도착 쪽에 붙임
@@ -808,6 +780,7 @@ function setHover(o, fromMap) {
 
 function toggleFocus(o) {
   state.focusO = state.focusO === o ? null : o;
+  syncControls(); // 슬라이더가 묶음 ↔ 1km 격자 임계치로 바뀜
   applyThreshold(); draw();
 }
 
@@ -841,7 +814,6 @@ function renderPanel() {
   if (!state.rid) return;
   $("sel").hidden = false;
   $("sel-name").textContent = rname[ridIdx[state.rid]];
-  const dotMode = inner() && state.kind !== "cc";
   if (inner()) {
     const K = D.kinds, sel = (k) => (state.kind === "cc" ? k.ccx : k[state.kind]);
     if (cmp()) {
@@ -860,11 +832,10 @@ function renderPanel() {
     $("st-a").textContent = fmt(D.total); $("st-a-l").textContent = `${state.dir === "in" ? "유입" : "유출"} 합 (${unit()})`;
     $("st-b").textContent = D.total ? pct(shownV / D.total) : "–"; $("st-b-l").textContent = "화살표 비중";
   }
-  $("st-c").textContent = dotMode ? `${D.dotsShown.length}/${D.dots.length}` : `${D.shown.length}/${D.list.length}`;
-  $("st-c-l").textContent = dotMode ? "격자 점" : "화살표";
+  $("st-c").textContent = `${D.shown.length}/${D.list.length}`;
   const fb = state.focusO != null ? D.byO.get(state.focusO) : null;
   $("chip").hidden = !fb;
-  if (fb) $("chip-text").textContent = inner() ? `중심지 ${partNo(fb.a)} → ${partNo(fb.b)} 강조`
+  if (fb) $("chip-text").textContent = inner() ? `${innerName(fb)} 강조`
     : `${flowName(fb)} · 출발 격자 ${fb.gridPts.length.toLocaleString()}개${cmp() ? ` (${fb.from})` : ""}`;
   const pp = state.part != null ? state.partOf[state.part] : null;
   $("chip-part").hidden = !pp;
@@ -873,8 +844,14 @@ function renderPanel() {
 
 const sum = (o) => [...(o instanceof Map ? o.values() : Object.values(o))].reduce((a, b) => a + b, 0);
 // "인천·부천·김포권 → 서울·광명권 중심지 1" (도착점이 생활권 중심이면 중심지 번호 없음)
+// 내부 화살표: "춘천·화천·양구권 중심1 → 주변부 격자"
+function innerName(d) {
+  const me = rname[ridIdx[state.rid]], nm = (p) => (p != null ? `${me} 중심${partNo(p)}` : "주변부 격자");
+  return `${nm(d.pa)} → ${nm(d.pb)}`;
+}
+
 function flowName(b) {
-  const me = rname[ridIdx[state.rid]], c = state.dmode === "part" ? ` 중심지 ${partNo(b.part)}` : "";
+  const me = rname[ridIdx[state.rid]], c = state.dmode === "part" ? ` 중심${partNo(b.part)}` : "";
   return state.dir === "in" ? `${rname[b.r]} → ${me}${c}` : `${me} → ${rname[b.r]}${c}`;
 }
 const signed = (x) => `${x >= 0 ? "+" : "−"}${Math.abs(100 * x).toFixed(1)}`;
@@ -900,7 +877,7 @@ function renderTableInner() {
       if (!has) continue;
       const v = c ? [(P.kt.get(p) || 0) / tot.kt, (P.kcb.get(p) || 0) / tot.kcb] : [P[ds].get(p), P[ds].get(p) / tot[ds]];
       const sw = c ? "" : `<span class="sw" style="background:rgb(${partColor(p).slice(0, 3).join(",")})"></span>`;
-      rows.push(`<tr tabindex="0" data-part="${p}" class="${p === state.part ? "focus" : ""}"><td>${sw}</td><td>중심지 ${f.properties.no} <small style="color:var(--muted)">격자 ${f.properties.n_grid}</small></td>${cells(...v)}</tr>`);
+      rows.push(`<tr tabindex="0" data-part="${p}" class="${p === state.part ? "focus" : ""}"><td>${sw}</td><td>중심${f.properties.no} <small style="color:var(--muted)">격자 ${f.properties.n_grid}</small></td>${cells(...v)}</tr>`);
     }
   }
   $("tbody").innerHTML = rows.join("");
@@ -910,7 +887,7 @@ function renderTableInner() {
 function renderTable() {
   if (state.rid && inner()) return renderTableInner();
   // 도착점이 덩어리면 '중심지' 열 = 도착 중심지 번호 (지도 번호와 같음; 유출이면 상대 생활권의 번호)
-  const t = state.thr[tk()], c = cmp(), pc = state.dmode === "part", n = (c ? 5 : 4) + (pc ? 1 : 0);
+  const t = state.thr[bk()], c = cmp(), pc = state.dmode === "part", n = (c ? 5 : 4) + (pc ? 1 : 0);
   $("tbl-title").textContent = state.rid ? ro(rname[ridIdx[state.rid]]) : "상대 생활권";
   $("thead").innerHTML = `<tr><th></th><th>${state.dir === "in" ? "출발" : "도착"} 생활권</th>${pc ? `<th class="num">중심지</th>` : ""}${c
     ? `<th class="num">KT</th><th class="num">KCB</th><th class="num">차이</th>` : `<th class="num">${unit()}</th><th class="num">비중</th>`}</tr>`;
@@ -924,7 +901,7 @@ function renderTable() {
     const cells = c
       ? `<td class="num">${pct(b.sa)}</td><td class="num">${pct(b.sb)}</td><td class="num">${b.d >= 0 ? "+" : "−"}${Math.abs(100 * b.d).toFixed(1)}</td>`
       : `<td class="num">${fmt(b.v)}</td><td class="num share">${pct(b.share)}<i style="width:${Math.max(2, 40 * b.v / D.max).toFixed(0)}px"></i></td>`;
-    return `${head}<tr data-o="${b.o}" tabindex="0" class="${cls}"><td><span class="sw" style="background:${b.hex}"></span></td><td>${rname[b.r]}</td>${pc ? `<td class="num">${partNo(b.part)}</td>` : ""}${cells}</tr>`;
+    return `${head}<tr data-o="${b.o}" tabindex="0" class="${cls}"><td><span class="sw" style="background:${b.hex}"></span></td><td>${rname[b.r]}</td>${pc ? `<td class="num">중심${partNo(b.part)}</td>` : ""}${cells}</tr>`;
   }).join("");
   $("tfoot").innerHTML = state.rid
     ? `<tr><td></td><td>합계</td>${pc ? "<td></td>" : ""}${c ? `<td class="num">100%</td><td class="num">100%</td><td class="num">%p</td>` : `<td class="num">${fmt(D.total)}</td><td class="num">100%</td>`}</tr>` : "";
@@ -933,17 +910,14 @@ function renderTable() {
 function getTooltip({ layer, object }) {
   if (!object) return null;
   const u = unit(), me = rname[ridIdx[state.rid]];
-  if (layer.id === "dots") {
-    const side = { pc: "주변부 출발 격자 → 중심지", cp: "중심지 → 주변부 도착 격자", pp: "주변부 격자 → 다른 주변부" }[state.kind];
-    const val = cmp() ? `KT ${pct(object.sa)} · KCB ${pct(object.sb)}` : `${fmt(object.v)} ${u}`;
-    const top = object.top != null && !cmp() ? `<br>주로 중심지 ${partNo(object.top)}${state.kind === "pc" ? "로" : "에서"} (${pct(object.topShare)})` : "";
-    return { className: "tip", html: `${side}<br>${val}${top}` };
-  }
   if (inner() && (layer.id === "arrows" || layer.id === "heads")) {
-    const val = cmp() ? `KT ${pct(object.sa)} · KCB ${pct(object.sb)} (${signed(object.d)}%p)` : `${fmt(object.v)} ${u} · ${pct(object.share)}`;
-    return { className: "tip", html: `중심지 ${partNo(object.a)} → 중심지 ${partNo(object.b)}<br>${val}` };
+    const val = cmp() ? `KT ${pct(object.sa)} · KCB ${pct(object.sb)}` : `${fmt(object.v)} ${u} · ${pct(object.share)}`;
+    return { className: "tip", html: `${innerName(object)}<br>${val}` };
   }
-  if (inner() && layer.id === "centers") return { className: "tip", html: `중심지 ${object.properties.no} · 격자 ${object.properties.n_grid}개<br><small>누르면 이 덩어리만</small>` };
+  if (layer.id === "centers") {
+    const p = object.properties, hint = state.dir === "out" ? "" : "<br><small>누르면 이 중심지 흐름만</small>";
+    return { className: "tip", html: `<b>${rname[ridIdx[p.rid]]} 중심${p.no}</b><br>격자 ${p.n_grid}개${hint}` };
+  }
   if (layer.id === "arrows" || layer.id === "heads") {
     const val = cmp() ? `KT ${pct(object.sa)} · KCB ${pct(object.sb)} (${signed(object.d)}%p)` : `${fmt(object.v)} ${u} · ${pct(object.share)}`;
     return { className: "tip", html: `<b>${flowName(object)}</b><br>${val}<br><small>누르면 1km 출발 격자별 화살표</small>` };
