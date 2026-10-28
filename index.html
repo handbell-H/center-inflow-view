@@ -169,10 +169,10 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     </section>
 
     <section class="opts">
-      <span class="ext-only">도착점</span>
-      <div class="seg sm ext-only" role="group" aria-label="화살표 도착점">
-        <button data-dm="part" aria-pressed="true" title="받는 중심지 덩어리 대표점">중심지</button>
-        <button data-dm="region" aria-pressed="false" title="도착 생활권 경계의 무게중심">생활권 중심</button>
+      <span class="ext-only">화살표</span>
+      <div class="seg sm ext-only" role="group" aria-label="화살표 연결 단위">
+        <button data-dm="part" aria-pressed="false" title="출발 격자 → 받는 중심지 덩어리 (중심지마다 화살표)">중심지별</button>
+        <button data-dm="region" aria-pressed="true" title="생활권 중심 → 생활권 중심 (생활권마다 화살표 하나)">생활권 중심</button>
       </div>
       <span>배경</span>
       <div class="seg sm" role="group" aria-label="배경지도">
@@ -228,7 +228,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "mXd+/7Rh4pnfIUPX7eahBw==", "iter": 600000, "check": "jo7zAdb1pP3TqYccqywPskp2T0ubGdDnrHYhe2GfKXNL334sH1zJZ8qslgWvzoQKMZN6JA=="}</script>
+<script>window.__site={"salt": "vh2O9o1ESTsh4I/X/qfHKg==", "iter": 600000, "check": "fQ03T51Sl3mqR3hjth5bnD0z7Gg9zlkgNa+HEg9MRmgZED7gHmfI2zXNhCr/tjEtWh4tuw=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -520,12 +520,12 @@ function curve(a, b) {
 const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const heading = (p, q) => (Math.atan2(merc(q[1]) - merc(p[1]), ((q[0] - p[0]) * Math.PI) / 180) * 180) / Math.PI;
 
-// 출발점 = 출발 격자 유입량 가중 중심(가장 가까운 격자), 도착점 = 그 덩어리 대표점 또는 도착 생활권 중심
+// 생활권 중심 모드: 생활권 중심 → 생활권 중심 (유입은 상대 → 이 생활권, 유출은 반대) — 생활권마다 한 점.
+// 중심지별 모드: 출발 격자 유입량 가중 중심(가장 가까운 격자) → 그 덩어리 대표점
 function place(b) {
-  b.src = nearest(b.gridPts, b.cx, b.cy);
-  const dest = state.dir === "in" ? state.rid : RID[b.r];
-  b.dst = state.dmode === "region" ? [regionBy[dest].properties.cx, regionBy[dest].properties.cy]
-    : [state.partOf[b.part].rep_lon, state.partOf[b.part].rep_lat];
+  const at = (rid) => [regionBy[rid].properties.cx, regionBy[rid].properties.cy];
+  if (state.dmode === "region") [b.src, b.dst] = state.dir === "in" ? [at(RID[b.r]), at(state.rid)] : [at(state.rid), at(RID[b.r])];
+  else { b.src = nearest(b.gridPts, b.cx, b.cy); b.dst = [state.partOf[b.part].rep_lon, state.partOf[b.part].rep_lat]; }
   b.path = curve(b.src, b.dst);
   b.angle = heading(b.path[39], b.path[40]);
 }
@@ -657,7 +657,9 @@ function applyThreshold() {
 }
 
 // ── 그리기 ─────────────────────────────────────────────────
-const W = (v) => 1.5 + 15 * Math.sqrt(v / D.max);
+// 화살표 굵기(px). 내부는 화살표가 수백~수천 개라 가늘게 시작
+const W = (v) => (inner() ? 0.4 + 6 * Math.sqrt(v / D.max) : 1.5 + 15 * Math.sqrt(v / D.max));
+const headSize = (w) => (inner() ? w * 1.5 + 3 : w * 1.6 + 9);
 
 function layers() {
   const C = D.C, hov = state.hoverO, foc = state.focusO, rid = state.rid;
@@ -738,19 +740,19 @@ function layers() {
     updateTriggers: { getColor: [...trig, state.anim], getWidth: trig } }));
   if (state.anim) {
     out.push(new deck.TripsLayer({ id: "particles", data: D.trips, getPath: (d) => d.b.path, getTimestamps: (d) => d.ts,
-      getColor: (d) => A(d.b.color, dim(d.b) ? 40 : 255), getWidth: (d) => W(d.b.v) * 0.75 + 1, widthUnits: "pixels",
+      getColor: (d) => A(d.b.color, dim(d.b) ? 40 : 255), getWidth: (d) => W(d.b.v) * 0.75 + (inner() ? 0.3 : 1), widthUnits: "pixels",
       capRounded: true, jointRounded: true, trailLength: 0.22, fadeTrail: true, currentTime: state.t,
       updateTriggers: { getColor: trig, getWidth: trig } }));
   }
   out.push(new deck.IconLayer({ id: "heads", data: D.vis, pickable: true, iconAtlas: ARROW,
     iconMapping: { a: { x: 0, y: 0, width: 64, height: 64, anchorX: 64, anchorY: 32, mask: true } },
     getIcon: () => "a", getPosition: (b) => b.path[40], getAngle: (b) => b.angle,
-    getSize: (b) => (W(b.v) * (bold(b) ? 1.6 : 1) + (bold(b) ? 2 : 0)) * 1.6 + 9, sizeUnits: "pixels",
+    getSize: (b) => headSize(W(b.v) * (bold(b) ? 1.6 : 1) + (bold(b) ? 2 : 0)), sizeUnits: "pixels",
     getColor: (b) => A(b.color, bold(b) ? 255 : dim(b) ? 40 : 240),
     updateTriggers: { getColor: trig, getSize: trig } }));
 
   // 도착점 표시 (화살 끝이 모이는 덩어리 대표점 또는 생활권 중심)
-  const dests = [...new Map(D.shown.map((b) => [b.dst.join(), b.dst])).values()];
+  const dests = inner() ? [] : [...new Map(D.shown.map((b) => [b.dst.join(), b.dst])).values()]; // 내부는 점 없음 (주변부 격자마다 찍혀 어지러움)
   out.push(new deck.ScatterplotLayer({ id: "dest-pt", data: dests, getPosition: (p) => p, getRadius: 4.5, radiusUnits: "pixels",
     getFillColor: C.fg, stroked: true, getLineColor: C.panel, getLineWidth: 2, lineWidthUnits: "pixels",
     updateTriggers: { getFillColor: D.theme, getLineColor: D.theme } }));
