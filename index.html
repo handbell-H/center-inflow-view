@@ -228,7 +228,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "hzmOGLghpGJxmY8FOhXU/g==", "iter": 600000, "check": "bRa8i0aXT2HEEUXQ274zNq/9dxPgea95J43lG3EOZNlJqyhQAQyura/EyqRI7R8PzaNYxw=="}</script>
+<script>window.__site={"salt": "+FSChrSGels5QNXaPArJ1Q==", "iter": 600000, "check": "7DuDGTRGV0pgJHVUOppYd9SBCvA3WRAxHYGDubDofS1gXHBTeyfTKu285bUF8i3H2+w0cA=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -487,24 +487,18 @@ function bundle(ds) {
   const f = fac(ds), by = new Map(), part = state.dir === "in" ? state.part : null, perPart = state.dmode === "part";
   for (const r of state.flows[state.rid][state.dir][ds]) {
     if ((state.ot === "c" && !r[4]) || (state.ot === "p" && r[4]) || (part != null && r[1] !== part)) continue;
-    const v = r[2] * f, g = G[r[0]], key = perPart ? r[3] * 10000 + r[1] : r[3];
+    const v = r[2] * f, key = perPart ? r[3] * 10000 + r[1] : r[3];
     let b = by.get(key);
-    if (!b) by.set(key, (b = { o: key, r: r[3], part: r[1], v: 0, sx: 0, sy: 0, grids: new Map() }));
-    b.v += v; b.sx += g[0] * v; b.sy += g[1] * v;
+    if (!b) by.set(key, (b = { o: key, r: r[3], part: r[1], v: 0, grids: new Map() }));
+    b.v += v;
     b.grids.set(r[0], (b.grids.get(r[0]) || 0) + v);
   }
   const list = [...by.values()].sort((a, b) => b.v - a.v), total = list.reduce((a, b) => a + b.v, 0);
   for (const b of list) {
-    b.share = b.v / total; b.cx = b.sx / b.v; b.cy = b.sy / b.v;
+    b.share = b.v / total;
     b.gridPts = [...b.grids].map(([g, v]) => [G[g][0], G[g][1], v]);
   }
   return { list, total };
-}
-
-function nearest(pts, x, y) {
-  let best = pts[0], d = Infinity;
-  for (const p of pts) { const e = (p[0] - x) ** 2 + (p[1] - y) ** 2; if (e < d) { d = e; best = p; } }
-  return [best[0], best[1]];
 }
 
 // 2차 베지어 곡선 (진행 방향 오른쪽으로 휨). 화살 끝 = 도착점
@@ -522,12 +516,12 @@ function curve(a, b) {
 const merc = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const heading = (p, q) => (Math.atan2(merc(q[1]) - merc(p[1]), ((q[0] - p[0]) * Math.PI) / 180) * 180) / Math.PI;
 
-// 생활권 중심 모드: 생활권 중심 → 생활권 중심 (유입은 상대 → 이 생활권, 유출은 반대) — 생활권마다 한 점.
-// 중심지별 모드: 출발 격자 유입량 가중 중심(가장 가까운 격자) → 그 덩어리 대표점
+// 출발점 = 출발 생활권 중심 한 점 (유입은 상대 생활권, 유출은 이 생활권). 도착점 = 생활권 중심 모드면 도착 생활권 중심,
+// 중심지별 모드면 그 덩어리 대표점 (도착은 여러 중심지로 나뉘어도 출발은 생활권마다 한 곳)
 function place(b) {
   const at = (rid) => [regionBy[rid].properties.cx, regionBy[rid].properties.cy];
-  if (state.dmode === "region") [b.src, b.dst] = state.dir === "in" ? [at(RID[b.r]), at(state.rid)] : [at(state.rid), at(RID[b.r])];
-  else { b.src = nearest(b.gridPts, b.cx, b.cy); b.dst = [state.partOf[b.part].rep_lon, state.partOf[b.part].rep_lat]; }
+  b.src = at(state.dir === "in" ? RID[b.r] : state.rid);
+  b.dst = state.dmode === "region" ? at(state.dir === "in" ? state.rid : RID[b.r]) : [state.partOf[b.part].rep_lon, state.partOf[b.part].rep_lat];
   b.path = curve(b.src, b.dst);
   b.angle = heading(b.path[39], b.path[40]);
 }
