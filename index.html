@@ -228,7 +228,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "+FSChrSGels5QNXaPArJ1Q==", "iter": 600000, "check": "7DuDGTRGV0pgJHVUOppYd9SBCvA3WRAxHYGDubDofS1gXHBTeyfTKu285bUF8i3H2+w0cA=="}</script>
+<script>window.__site={"salt": "+QqE443tlxqrxWDhTZz2Yw==", "iter": 600000, "check": "UNDtGiUlXXPJibDWtNdldiVlLqLRCtDVVQFkm0cRWdKbLT1nohnIuVJrDcau8uYZ5WZ1JA=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -300,7 +300,7 @@ const detailOn = () => !inner() && state.focusO != null;
 const bk = () => (inner() ? "i" : "") + state.ds; // 화살표(묶음·내부) 임계치 키
 const gk = () => "g" + state.ds; // 누른 묶음의 1km 격자 화살표 임계치 키
 const tk = () => (detailOn() ? gk() : bk()); // 슬라이더가 지금 조절하는 임계치
-let regions, centers, summary, labels, G, vec, deckgl, rname = [], RID = [], statById = {}, ridIdx = {}, regionBy = {};
+let regions, centers, summary, labels, G, Z, vec, deckgl, rname = [], RID = [], statById = {}, ridIdx = {}, regionBy = {};
 let D = { list: [], shown: [], trips: [], dots: [], dotsShown: [], byO: new Map(), max: 1, total: 0 };
 
 const $ = (id) => document.getElementById(id);
@@ -345,7 +345,7 @@ async function ensureVec() {
 
 async function init() {
   const tiles = probeTiles();
-  [regions, centers, summary, labels, G] = await Promise.all(["regions", "centers", "summary", "labels", "grids"].map(load));
+  [regions, centers, summary, labels, G, Z] = await Promise.all(["regions", "centers", "summary", "labels", "grids", "gridzone"].map(load));
   rname = summary.regions.map((r) => short(r.rname));
   RID = summary.regions.map((r) => r.rid);
   RID.forEach((r, i) => (ridIdx[r] = i));
@@ -653,6 +653,20 @@ function applyThreshold() {
 }
 
 // ── 그리기 ─────────────────────────────────────────────────
+// 생활권의 주변부 격자 칸. Z[격자] = 생활권 idx × 2 + 중심지면 1. 5179 격자를 위경도로 그릴 때 중심 ± 500m 를
+// 자오선 수렴각 −γ (γ ≈ (경도 − 127.5°)·sin 위도) 만큼 돌린다 — 모서리 오차 2m 안이라 칸이 빈틈없이 맞물림
+function cellsOf(rid) {
+  if (state.cells?.[rid]) return state.cells[rid];
+  const r = ridIdx[rid], out = [];
+  for (let i = 0; i < Z.length; i++) {
+    if (Z[i] >> 1 !== r || Z[i] & 1) continue;
+    const [lon, lat] = G[i], phi = (lat * Math.PI) / 180, g = -(((lon - 127.5) * Math.PI) / 180) * Math.sin(phi);
+    const kx = 111320 * Math.cos(phi), c = Math.cos(g), s = Math.sin(g);
+    out.push([[-500, -500], [500, -500], [500, 500], [-500, 500]].map(([dx, dy]) => [lon + (dx * c - dy * s) / kx, lat + (dx * s + dy * c) / 110574]));
+  }
+  return ((state.cells ??= {})[rid] = out);
+}
+
 // 화살표 굵기(px). 내부는 화살표가 수백~수천 개라 가늘게 시작
 const W = (v) => (inner() ? 0.4 + 6 * Math.sqrt(v / D.max) : 1.5 + 15 * Math.sqrt(v / D.max));
 const headSize = (w) => (inner() ? w * 1.5 + 3 : w * 1.6 + 9);
@@ -684,6 +698,11 @@ function layers() {
     getLineWidth: (f) => f.properties.rid === rid ? 2.5 : other(f) ? 1.4 : 0.6,
     lineWidthUnits: "pixels", autoHighlight: true, highlightColor: A(C.fg, 24),
     updateTriggers: { getFillColor: trig, getLineColor: trig, getLineWidth: trig } }));
+
+  // 선택 생활권의 주변부 1km 격자 — 충북 대시보드처럼 옅은 회색 칸 + 가는 경계선 (중심지는 아래 덩어리로 진하게)
+  if (rid) out.push(new deck.PolygonLayer({ id: "cells", data: cellsOf(rid), getPolygon: (c) => c, filled: true, stroked: true,
+    getFillColor: A(C.muted, 40), getLineColor: A(C.panel, 170), getLineWidth: 0.5, lineWidthUnits: "pixels",
+    updateTriggers: { getFillColor: D.theme, getLineColor: D.theme } }));
 
   { // 한글 지명 (시도, 확대하면 시군구)
     const lv = state.zoom >= 8.3 ? "sgg" : "sido";
