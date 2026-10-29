@@ -48,6 +48,7 @@ h2 { font-size: 18px; font-weight: 700; margin: 0; text-wrap: balance; }
 .seg button[aria-pressed="true"] small { color: inherit; opacity: 0.85; }
 .seg button:disabled { color: var(--muted); cursor: not-allowed; }
 .seg.sm button { padding: 5px 4px; font-size: 12px; }
+#yr { margin-top: 6px; }
 .seg.kind { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
 .seg.kind button:nth-child(3) { border-left: 0; }
 .seg.kind button:nth-child(n+3) { border-top: 1px solid var(--line); }
@@ -121,7 +122,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   <aside>
     <header>
       <h1>대한민국 통근시간대 통행 흐름으로 본 도시생활권</h1>
-      <p class="sub">2025 · 생활권(목표 자족도 75%) · 중심지Ⅰ·Ⅱ</p>
+      <p class="sub" id="sub"></p>
     </header>
 
     <section id="sel" hidden>
@@ -135,9 +136,13 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
 
     <section>
       <div class="seg" role="group" aria-label="OD 데이터">
-        <button data-ds="kt" aria-pressed="true" title="국가교통DB 통행 OD 2025 출근 · 화·수·목 07~09시 직장 도착 · 하루 평균">KT<small>통근 07~09시 평균</small></button>
-        <button data-ds="kcb" aria-pressed="false" title="KCB 통근 OD 2025 · 직업 전체·연령 합 · 1~2명 마스킹은 1명">KCB<small>명</small></button>
+        <button data-ds="kt" aria-pressed="true" title="국가교통DB 통행 OD 출근 · 화·수·목 07~09시 직장 도착 · 하루 평균">KT<small>통근 07~09시 평균</small></button>
+        <button data-ds="kcb" aria-pressed="false" title="KCB 통근 OD · 직업 전체·연령 합 · 1~2명 마스킹은 1명">KCB<small>명</small></button>
         <button data-ds="cmp" aria-pressed="false" title="상대 생활권별 비중(%)을 KT와 KCB로 비교">비교<small>비중 %</small></button>
+      </div>
+      <div class="seg sm" id="yr" role="group" aria-label="연도" title="생활권·중심지는 두 연도 모두 2025 그대로">
+        <button data-yr="prev" aria-pressed="false"></button>
+        <button data-yr="" aria-pressed="true"></button>
       </div>
     </section>
 
@@ -217,10 +222,10 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     <h2 id="src-h">데이터 출처</h2>
     <p class="sub">국토교통부 (국토공간거점지도, 국가교통DB)</p>
     <dl>
-      <dt>KT 통행 OD</dt><dd>국가교통DB 통신 기반 통행 OD 2025 출근 — 화·수·목 07~09시(2시간)에 직장에 도착한 통행. 관측기간 30일 중 화·수·목 12일. 값은 하루 07~09시 평균 통행(12일 합계 ÷ 12).</dd>
-      <dt>KCB 통근 OD</dt><dd>2025 자택 → 직장 1km 격자 OD. 직업 전체·연령 합, 1~2명으로 가려진 칸은 1명.</dd>
+      <dt>KT 통행 OD</dt><dd>국가교통DB 통신 기반 통행 OD 2024·2025 출근 — 화·수·목 07~09시(2시간)에 직장에 도착한 통행. 관측기간(2024 28일, 2025 30일) 중 화·수·목 12일. 값은 하루 07~09시 평균 통행(12일 합계 ÷ 12).</dd>
+      <dt>KCB 통근 OD</dt><dd>2021·2025 (각 12월 기준) 자택 → 직장 1km 격자 OD. 직업 전체·연령 합, 1~2명으로 가려진 칸은 1명.</dd>
       <dt>중심지</dt><dd>국토공간거점지도 2025 중심지Ⅰ(거점·도심)·Ⅱ(준거점·부심) 1km 격자. 생활권마다 8방향으로 이어진 격자를 한 덩어리로 묶고, 격자 수가 큰 순서로 번호를 붙임. '생활권 중심' 화살표는 각 생활권의 가장 큰 중심지(중심1)에 이어짐.</dd>
-      <dt>생활권</dt><dd>2025 출근 통행 기반 생활권, 목표 자족도 75% (92개). 같은 1km 격자 안 통행은 제외.</dd>
+      <dt>생활권</dt><dd>2025 출근 통행 기반 생활권, 목표 자족도 75% (92개). 같은 1km 격자 안 통행은 제외. 이전 연도 OD도 2025 생활권·중심지로 집계해 연도끼리 비교할 수 있음.</dd>
       <dt>배경지도</dt><dd>통계청 SGIS 행정구역(2025.6), Esri</dd>
     </dl>
     <form method="dialog"><button>닫기</button></form>
@@ -238,7 +243,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "lkpJCYJ6+BAyUVmLBUOcAA==", "iter": 600000, "check": "VC3gcNDdjB+W62lMmnM3WybfRsJd3x9w/rCsKGpFUMUjboCREZba3mdYqiwfHZGnKrFBWw=="}</script>
+<script>window.__site={"salt": "zNuHuMhx3j7mojyzyMMFEA==", "iter": 600000, "check": "IPh3mHyI37H8ezxjHOat93XzHPj6/TlfgyJR1jWY+GxKl3v/jooSU6LIlqJG9FoZePJBCw=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -299,7 +304,7 @@ const CAT = {
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas";
 const TILES = { light: "World_Light_Gray_Base", dark: "World_Dark_Gray_Base" };
 const ARROW = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><path d='M2 6 L64 32 L2 58 L14 32 Z' fill='#fff'/></svg>");
-const state = { lt: "zone", projOn: false, proj: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
+const state = { yr: "", lt: "zone", projOn: false, proj: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
   anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "region" };
 const fac = (ds = state.ds) => (ds === "kt" ? KT_F : 1);
 const unit = () => (state.ds === "cmp" ? "%" : state.ds === "kt" ? "통행" : "명");
@@ -311,6 +316,8 @@ const bk = () => (inner() ? "i" : "") + state.ds; // 화살표(묶음·내부) �
 const gk = () => "g" + state.ds; // 누른 묶음의 1km 격자 화살표 임계치 키
 const tk = () => (detailOn() ? gk() : bk()); // 슬라이더가 지금 조절하는 임계치
 let regions, centers, summary, labels, G, Z, projects, vec, deckgl, rname = [], RID = [], statById = {}, ridIdx = {}, regionBy = {};
+const SUM = {}, FL = { "": state.flows, prev: {} }; // 연도별 summary·생활권 흐름 캐시
+const flowKey = (rid) => `${state.yr && state.yr + "/"}flows/r${rid.slice(-3)}`;
 let D = { list: [], shown: [], trips: [], dots: [], dotsShown: [], byO: new Map(), max: 1, total: 0 };
 
 const $ = (id) => document.getElementById(id);
@@ -360,6 +367,9 @@ async function init() {
   RID = summary.regions.map((r) => r.rid);
   RID.forEach((r, i) => (ridIdx[r] = i));
   summary.stats.forEach((s) => (statById[s.rid] = s));
+  SUM[""] = summary;
+  // 단일 파일 버전엔 이전 연도가 없다 → 연도 버튼 숨김
+  if (!window.__store || "prev/summary" in window.__store) SUM.prev = await load("prev/summary");
   regions.features.forEach((f) => (regionBy[f.properties.rid] = f));
   const byRid = {};
   centers.features.forEach((f) => (byRid[f.properties.rid] ??= []).push(f));
@@ -421,6 +431,12 @@ function reset({ fit = false } = {}) {
 function wire() {
   const on = (attr, fn) => document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.addEventListener("click", () => fn(b.dataset[attr])));
   on("ds", (v) => { state.ds = v; reset(); });
+  on("yr", async (v) => {
+    state.yr = v; state.flows = FL[v];
+    statById = Object.fromEntries(SUM[v].stats.map((s) => [s.rid, s]));
+    if (state.rid && !state.flows[state.rid]) state.flows[state.rid] = await load(flowKey(state.rid));
+    reset();
+  });
   on("dir", (v) => { state.dir = v; state.part = null; reset({ fit: true }); });
   on("ot", (v) => { state.ot = v; reset(); });
   on("kind", (v) => { state.kind = v; reset(); });
@@ -460,7 +476,13 @@ function syncControls(updateRange = true) {
   $("proj-on").checked = state.projOn;
   $("lg-proj").hidden = !state.projOn;
   $("q").placeholder = state.lt === "proj" ? "프로젝트·유형·권역 검색" : "생활권 검색";
-  for (const [attr, key] of [["lt", "lt"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"]])
+  // 연도 버튼: 지금 데이터의 연도 (비교면 KT·KCB 짝)
+  const yl = (y) => (state.ds !== "cmp" ? y[state.ds] : y.kt === y.kcb ? y.kt : `KT ${y.kt} · KCB ${y.kcb}`);
+  $("yr").hidden = !SUM.prev;
+  document.querySelectorAll("[data-yr]").forEach((b) => { if (SUM[b.dataset.yr]) b.textContent = yl(SUM[b.dataset.yr].years); });
+  const y = SUM[state.yr].years;
+  $("sub").textContent = `KT ${y.kt} · KCB ${y.kcb} · 생활권(목표 자족도 75%)·중심지Ⅰ·Ⅱ 2025`;
+  for (const [attr, key] of [["yr", "yr"], ["lt", "lt"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"]])
     document.querySelectorAll(`[data-${attr}]`).forEach((x) => x.setAttribute("aria-pressed", x.dataset[attr] === state[key]));
   $("bm-tile").disabled = !state.tilesOK;
   $("bm-tile").title = state.tilesOK ? "" : "이 환경에서는 외부 지도 타일을 불러올 수 없습니다";
@@ -524,7 +546,7 @@ async function select(rid) {
   state.rid = rid; state.focusO = null; state.hoverO = null; state.part = null;
   history.replaceState(null, "", `#r${rid.slice(-3)}`);
   $("regions").querySelectorAll("li").forEach((li) => li.setAttribute("aria-selected", li.dataset.rid === rid));
-  if (!state.flows[rid]) state.flows[rid] = await load(`flows/r${rid.slice(-3)}`);
+  if (!state.flows[rid]) state.flows[rid] = await load(flowKey(rid));
   rebuild();
   fitTo(rid);
   draw();
