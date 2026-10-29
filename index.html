@@ -31,6 +31,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--fo
 aside { grid-area: side; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px;
   padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; overflow-y: auto; }
 #map { grid-area: map; position: relative; background: var(--sea); overflow: hidden; }
+#deck { position: absolute; inset: 0; } /* deck 은 여기서만 마우스를 받는다 — 위에 뜬 상자(조작·범례·칩)를 눌러도 지도가 끌리지 않게 */
 .tpanel { grid-area: table; background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column;
   padding-block: 16px 0; padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-left: 16px; }
 h1 { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
@@ -101,6 +102,7 @@ tbody tr.sep td { font-size: 11px; font-weight: 600; color: var(--muted); backgr
 .share i { position: absolute; right: 6px; bottom: 2px; height: 3px; border-radius: 2px 0 0 2px; background: var(--muted); opacity: 0.45; }
 tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 600; border-top: 1px solid var(--line); border-bottom: 0; padding-block: 8px; }
 .legend, .chips, .empty { z-index: 2; } /* deck 캔버스 위로 */
+.mapctl, .legend, .chips { user-select: none; } /* 상자 위에서 끌어도 글자가 선택되지 않게 */
 .legend { position: absolute; right: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: 12px; display: grid; gap: 5px; }
 .legend div { display: flex; align-items: center; gap: 8px; }
 .legend small { color: var(--muted); font-size: 10px; }
@@ -196,6 +198,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </aside>
 
   <div id="map">
+    <div id="deck"></div>
     <div class="empty" id="empty">생활권을 고르거나, 국토공간대전환 프로젝트를 켜고 폴리곤을 누르세요</div>
     <div class="mapctl">
       <div class="seg sm" role="group" aria-label="배경지도">
@@ -246,7 +249,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "afkLobWvPNmyi1K1MPwsnQ==", "iter": 600000, "check": "rh905H3CgdjW31Gykh/q5QmyHa3iow5R6lBxv0+hZIgVZj0wr5v2LpqiZRadODEs9QoZEQ=="}</script>
+<script>window.__site={"salt": "KOiLaNpGniifWZ/XDkibNw==", "iter": 600000, "check": "fcqX7hpx9+tG5VWynt2JSBQ7UJudxIPNZNUyymgGMzxNw2jJK0bqaOApjEOmy2wr0fKJiw=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -399,7 +402,7 @@ async function init() {
   if (state.bm === "vec") await ensureVec();
   await Promise.all(["500", "700"].map((w) => document.fonts.load(`${w} 12px "KoPubWorld Dotum"`))); // 지도 글자(TextLayer)가 쓰기 전에
   deckgl = new deck.Deck({
-    parent: $("map"),
+    parent: $("deck"),
     initialViewState: { longitude: 127.8, latitude: 36.1, zoom: 6.2 },
     controller: true,
     getTooltip,
@@ -514,7 +517,8 @@ function syncControls(updateRange = true) {
     : `굵기 = ${size}${cmp() ? "" : { pc: " · 색 = 도착 중심지", cp: " · 색 = 출발 중심지", cc: " · 색 = 출발 중심지", pp: "" }[state.kind]}`;
   $("lg-cmp").hidden = !cmp();
   $("lg-cmp-t").textContent = `KCB 비중 큼 · 비슷 · KT 비중 큼 (${inner() ? "상대 차이" : "±5%p"})`;
-  $("lg-c").textContent = pm() ? "프로젝트가 속한 생활권의 중심지" : state.dir === "out" ? "도착 중심지 (마우스 올리면 이름)" : "중심지 (마우스 올리면 이름, 누르면 그 중심지만)";
+  $("lg-c").parentElement.hidden = pm();
+  $("lg-c").textContent = state.dir === "out" ? "도착 중심지 (마우스 올리면 이름)" : "중심지 (마우스 올리면 이름, 누르면 그 중심지만)";
 }
 
 // 국토공간대전환 프로젝트: 유형 색·순서는 원래 대전환 대시보드(국토공간대전환_지도_v2_0715)와 같게
@@ -768,12 +772,12 @@ const W = (v) => (inner() ? 0.4 + 6 * Math.sqrt(v / D.max) : 1.5 + 15 * Math.sqr
 const headSize = (w) => (inner() ? w * 1.5 + 3 : w * 1.6 + 9);
 
 function layers() {
-  const C = D.C, hov = state.hoverO, foc = state.focusO, rid = state.rid;
+  const C = D.C, hov = state.hoverO, foc = state.focusO, rid = state.rid, sel = pm() ? null : rid; // sel = 강조할 고른 생활권 (프로젝트 모드엔 없음)
   const dim = (b) => (hov != null && b.o !== hov) || (hov == null && foc != null && b.o !== foc);
   // 생활권 경계는 생활권 단위: 가리키거나 누른 묶음의 생활권만 진하게
   const hb = D.byO.get(hov ?? foc), dimR = (x) => hb != null && hb.r !== x.r;
   const other = (f) => D.byR.get(ridIdx[f.properties.rid]);
-  const trig = [rid, state.ds, state.dir, state.ot, state.kind, state.part, hov, foc, D.shown.length, D.dotsShown.length, D.theme, state.dmode];
+  const trig = [rid, state.proj, state.ds, state.dir, state.ot, state.kind, state.part, hov, foc, D.shown.length, D.dotsShown.length, D.theme, state.dmode];
   const out = [];
   const tiles = (name) => new deck.TileLayer({ id: `tiles-${name}`, data: `${ESRI}/${name}/MapServer/tile/{z}/{y}/{x}`,
     minZoom: 0, maxZoom: 16, tileSize: 256,
@@ -789,14 +793,14 @@ function layers() {
   }
 
   out.push(new deck.GeoJsonLayer({ id: "regions", data: regions, pickable: true, filled: true, stroked: true,
-    getFillColor: (f) => { const b = other(f); return f.properties.rid === rid ? A(C.fg, 14) : b ? A(b.color, dimR(b) ? 14 : 52) : [0, 0, 0, 0]; },
-    getLineColor: (f) => { const b = other(f); return f.properties.rid === rid ? C.fg : b ? A(b.color, dimR(b) ? 70 : 220) : A(C.muted, 90); },
-    getLineWidth: (f) => f.properties.rid === rid ? 2.5 : other(f) ? 1.4 : 0.6,
+    getFillColor: (f) => { const b = other(f); return f.properties.rid === sel ? A(C.fg, 14) : b ? A(b.color, dimR(b) ? 14 : 52) : [0, 0, 0, 0]; },
+    getLineColor: (f) => { const b = other(f); return f.properties.rid === sel ? C.fg : b ? A(b.color, dimR(b) ? 70 : 220) : A(C.muted, 90); },
+    getLineWidth: (f) => f.properties.rid === sel ? 2.5 : other(f) ? 1.4 : 0.6,
     lineWidthUnits: "pixels", autoHighlight: true, highlightColor: A(C.fg, 24),
     updateTriggers: { getFillColor: trig, getLineColor: trig, getLineWidth: trig } }));
 
   // 선택 생활권의 주변부 1km 격자 — 충북 대시보드처럼 옅은 회색 칸 + 가는 경계선 (중심지는 아래 덩어리로 진하게)
-  if (rid) out.push(new deck.PolygonLayer({ id: "cells", data: cellsOf(rid), getPolygon: (c) => c, filled: true, stroked: true,
+  if (sel) out.push(new deck.PolygonLayer({ id: "cells", data: cellsOf(sel), getPolygon: (c) => c, filled: true, stroked: true,
     getFillColor: A(C.muted, 40), getLineColor: A(C.panel, 170), getLineWidth: 0.5, lineWidthUnits: "pixels",
     updateTriggers: { getFillColor: D.theme, getLineColor: D.theme } }));
 
@@ -809,7 +813,7 @@ function layers() {
 
   // 중심지 (화살표 아래): 유입·내부면 이 생활권 덩어리(눌러서 하나만), 유출이면 화살표가 닿는 상대 생활권 덩어리.
   // 내부 모드는 덩어리마다 색 (주변부 점 색과 같음 → 어느 중심지가 어느 주변부와 엮이는지)
-  const own = rid ? state.centersBy[rid] : [];
+  const own = sel ? state.centersBy[sel] : [];
   const cdata = state.dir === "out" ? [...own, ...[...D.byR.keys()].flatMap((r) => state.centersBy[RID[r]] || [])] : own;
   out.push(new deck.GeoJsonLayer({ id: "centers", data: cdata, pickable: true, filled: true, stroked: true,
     getFillColor: (f) => {
