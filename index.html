@@ -11,18 +11,18 @@
 :root {
   --bg: #f2f4f6; --panel: #ffffff; --fg: #17212b; --muted: #5a6672; --line: #cfd6dd; --row: #eef2f5;
   --sea: #d9e3ea; --land: #f7f6f2; --sido: #9aa6b1; --sgg: #d3d9de; --other: #9aa3ab;
-  --kt: #1d5fc4; --kcb: #c25e10; --cmp: #17212b;
+  --kt: #1d5fc4; --kcb: #c25e10; --cmp: #17212b; --proj: #7b3fb5;
   --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
-  --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark } }
+  --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; --proj: #b991f2; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
-  --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark }
+  --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; --proj: #b991f2; color-scheme: dark }
 html, body { height: 100%; }
 [hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px; }
@@ -74,6 +74,9 @@ dialog form button { font: inherit; padding: 6px 14px; border: 1px solid var(--l
 .list ul { list-style: none; margin: 6px 0 0; padding: 0; overflow-y: auto; flex: 1; border-top: 1px solid var(--line); }
 .list li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13px; }
 .list li em { font: normal 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.list li.grp { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--bg); cursor: default; }
+.list li em.tag { font-family: var(--font); font-size: 11px; }
+.list .seg { margin-bottom: 6px; }
 .list li[aria-selected="true"] { font-weight: 600; box-shadow: inset 3px 0 0 var(--ds); }
 .list li:hover { background: var(--row); }
 .twrap { overflow: auto; flex: 1; margin-top: 10px; border-top: 1px solid var(--line); }
@@ -180,22 +183,29 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
         <button data-bm="vec" aria-pressed="true">행정경계</button>
       </div>
       <label class="chk" for="anim"><input id="anim" type="checkbox"> 흐름 애니메이션</label>
+      <label class="chk" for="proj-on"><input id="proj-on" type="checkbox"> 국토공간대전환 프로젝트 표시</label>
     </section>
 
     <section class="list">
-      <input id="q" type="search" placeholder="생활권 검색" aria-label="생활권 검색">
-      <ul id="regions" role="listbox" aria-label="생활권"></ul>
+      <div class="seg sm" role="group" aria-label="목록">
+        <button data-lt="zone" aria-pressed="true">생활권</button>
+        <button data-lt="proj" aria-pressed="false" title="국토공간대전환 프로젝트 폴리곤">대전환 프로젝트</button>
+      </div>
+      <input id="q" type="search" placeholder="검색" aria-label="목록 검색">
+      <ul id="regions" role="listbox" aria-label="목록"></ul>
     </section>
   </aside>
 
   <div id="map">
     <div class="empty" id="empty">생활권을 고르세요</div>
     <div class="chips">
+      <div class="chip" id="chip-proj" hidden><span id="chip-proj-t"></span><button id="chip-proj-x" type="button">해제</button></div>
       <div class="chip" id="chip-part" hidden><span id="chip-part-t"></span><button id="chip-part-x" type="button">해제</button></div>
       <div class="chip" id="chip" hidden><span id="chip-text"></span><button id="chip-x" type="button">해제</button></div>
     </div>
     <div class="legend">
       <div><svg width="22" height="10" aria-hidden="true"><path d="M1 5 H15" stroke="currentColor" stroke-width="3" opacity=".5"/><path d="M14 1 L21 5 L14 9 Z" fill="currentColor"/></svg><span id="lg-a"></span></div>
+      <div id="lg-proj" hidden><span class="lsw" style="background: color-mix(in srgb, var(--proj) 25%, transparent); border: 1.5px solid var(--proj)"></span><span>국토공간대전환 프로젝트</span></div>
       <div id="lg-cmp" hidden><span class="lsw" style="background: linear-gradient(90deg, var(--kcb), var(--other), var(--kt))"></span><span id="lg-cmp-t"></span></div>
       <div><svg width="22" height="10" aria-hidden="true"><rect width="22" height="10" rx="2" fill="currentColor" opacity=".7"/></svg><span id="lg-c">중심지 (눌러서 덩어리 선택)</span></div>
       <small>출처 국토교통부(국토공간거점지도, 국가교통DB)</small>
@@ -228,7 +238,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "+QqE443tlxqrxWDhTZz2Yw==", "iter": 600000, "check": "UNDtGiUlXXPJibDWtNdldiVlLqLRCtDVVQFkm0cRWdKbLT1nohnIuVJrDcau8uYZ5WZ1JA=="}</script>
+<script>window.__site={"salt": "lkpJCYJ6+BAyUVmLBUOcAA==", "iter": 600000, "check": "VC3gcNDdjB+W62lMmnM3WybfRsJd3x9w/rCsKGpFUMUjboCREZba3mdYqiwfHZGnKrFBWw=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -289,7 +299,7 @@ const CAT = {
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas";
 const TILES = { light: "World_Light_Gray_Base", dark: "World_Dark_Gray_Base" };
 const ARROW = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><path d='M2 6 L64 32 L2 58 L14 32 Z' fill='#fff'/></svg>");
-const state = { ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
+const state = { lt: "zone", projOn: false, proj: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
   anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "region" };
 const fac = (ds = state.ds) => (ds === "kt" ? KT_F : 1);
 const unit = () => (state.ds === "cmp" ? "%" : state.ds === "kt" ? "통행" : "명");
@@ -300,7 +310,7 @@ const detailOn = () => !inner() && state.focusO != null;
 const bk = () => (inner() ? "i" : "") + state.ds; // 화살표(묶음·내부) 임계치 키
 const gk = () => "g" + state.ds; // 누른 묶음의 1km 격자 화살표 임계치 키
 const tk = () => (detailOn() ? gk() : bk()); // 슬라이더가 지금 조절하는 임계치
-let regions, centers, summary, labels, G, Z, vec, deckgl, rname = [], RID = [], statById = {}, ridIdx = {}, regionBy = {};
+let regions, centers, summary, labels, G, Z, projects, vec, deckgl, rname = [], RID = [], statById = {}, ridIdx = {}, regionBy = {};
 let D = { list: [], shown: [], trips: [], dots: [], dotsShown: [], byO: new Map(), max: 1, total: 0 };
 
 const $ = (id) => document.getElementById(id);
@@ -345,7 +355,7 @@ async function ensureVec() {
 
 async function init() {
   const tiles = probeTiles();
-  [regions, centers, summary, labels, G, Z] = await Promise.all(["regions", "centers", "summary", "labels", "grids", "gridzone"].map(load));
+  [regions, centers, summary, labels, G, Z, projects] = await Promise.all(["regions", "centers", "summary", "labels", "grids", "gridzone", "projects"].map(load));
   rname = summary.regions.map((r) => short(r.rname));
   RID = summary.regions.map((r) => r.rid);
   RID.forEach((r, i) => (ridIdx[r] = i));
@@ -379,6 +389,7 @@ async function init() {
     onClick: (info) => {
       const id = info.layer?.id;
       if (id === "arrows" || id === "heads") toggleFocus(info.object.o);
+      else if (id === "projects") selectProj(info.object.properties.id);
       else if (id === "centers") { if (state.dir !== "out") togglePart(info.object.properties.part); }
       else if (id === "regions") select(info.object.properties.rid);
     },
@@ -422,6 +433,9 @@ function wire() {
   $("q").addEventListener("input", renderList);
   $("chip-x").addEventListener("click", () => toggleFocus(state.focusO));
   $("chip-part-x").addEventListener("click", () => togglePart(state.part));
+  $("chip-proj-x").addEventListener("click", () => selectProj(state.proj));
+  on("lt", (v) => { state.lt = v; if (v === "proj") state.projOn = true; $("q").value = ""; syncControls(); renderList(); draw(); });
+  $("proj-on").addEventListener("change", (e) => { state.projOn = e.target.checked; if (!state.projOn) state.proj = null; syncControls(); renderList(); renderPanel(); draw(); });
   const tb = $("tbody");
   // 표 행: data-o = 강조할 흐름, data-kind = 내부 흐름 종류 바꾸기, data-part = 덩어리 하나만
   const act = (tr) => tr.dataset.kind ? (state.kind = tr.dataset.kind, reset()) : tr.dataset.part ? togglePart(+tr.dataset.part) : toggleFocus(+tr.dataset.o);
@@ -443,7 +457,10 @@ function syncControls(updateRange = true) {
     : `임계치 (일정 ${cmp() ? "비중 %" : "통행량"} 이상)`;
   document.documentElement.style.setProperty("--ds", `var(--${state.ds})`);
   document.documentElement.dataset.mode = state.dir;
-  for (const [attr, key] of [["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"]])
+  $("proj-on").checked = state.projOn;
+  $("lg-proj").hidden = !state.projOn;
+  $("q").placeholder = state.lt === "proj" ? "프로젝트·유형·권역 검색" : "생활권 검색";
+  for (const [attr, key] of [["lt", "lt"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"]])
     document.querySelectorAll(`[data-${attr}]`).forEach((x) => x.setAttribute("aria-pressed", x.dataset[attr] === state[key]));
   $("bm-tile").disabled = !state.tilesOK;
   $("bm-tile").title = state.tilesOK ? "" : "이 환경에서는 외부 지도 타일을 불러올 수 없습니다";
@@ -457,7 +474,41 @@ function syncControls(updateRange = true) {
   $("lg-c").textContent = state.dir === "out" ? "도착 중심지 (마우스 올리면 이름)" : "중심지 (마우스 올리면 이름, 누르면 그 중심지만)";
 }
 
+// 국토공간대전환 프로젝트 목록: 유형별로 묶음 (많은 유형 먼저), 검색은 이름·유형·권역
+const PTYPES = ["국가산단", "혁신도시", "국립대병원", "거점국립대", "캠퍼스혁신파크", "도심융합특구", "과기원", "3대 메가 프로젝트", "행복도시"];
+function renderProjList() {
+  const q = $("q").value.trim(), fs = projects.features.map((f) => f.properties)
+    .filter((p) => !q || [p.name, p.ktype, p.region].some((x) => x?.includes(q)));
+  const types = [...new Set([...PTYPES, ...fs.map((p) => p.ktype)])];
+  $("regions").innerHTML = types.map((t) => {
+    const g = fs.filter((p) => p.ktype === t);
+    return g.length ? `<li class="grp">${t} · ${g.length}</li>` + g.map((p) =>
+      `<li role="option" tabindex="0" data-proj="${p.id}" aria-selected="${p.id === state.proj}"><span>${p.name}</span><em class="tag">${p.region}</em></li>`).join("") : "";
+  }).join("");
+  $("regions").querySelectorAll("li[data-proj]").forEach((li) => {
+    li.addEventListener("click", () => selectProj(+li.dataset.proj));
+    li.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectProj(+li.dataset.proj); } });
+  });
+}
+
+// 프로젝트를 고르면 지도에 켜고 그 폴리곤으로 이동·강조 (다시 고르면 해제)
+function selectProj(id) {
+  state.proj = state.proj === id ? null : id;
+  if (state.proj != null) {
+    state.projOn = true;
+    const f = projects.features.find((x) => x.properties.id === id);
+    let [x0, y0, x1, y1] = [180, 90, -180, -90];
+    const walk = (c) => typeof c[0] === "number" ? (x0 = Math.min(x0, c[0]), y0 = Math.min(y0, c[1]), x1 = Math.max(x1, c[0]), y1 = Math.max(y1, c[1])) : c.forEach(walk);
+    walk(f.geometry.coordinates);
+    const width = $("map").clientWidth, height = $("map").clientHeight;
+    const vp = new deck.WebMercatorViewport({ width, height }).fitBounds([[x0, y0], [x1, y1]], { padding: Math.min(width, height) * 0.3 });
+    deckgl.setProps({ initialViewState: { longitude: vp.longitude, latitude: vp.latitude, zoom: Math.min(vp.zoom, 13), transitionDuration: 700 } });
+  }
+  syncControls(); renderList(); renderPanel(); draw();
+}
+
 function renderList() {
+  if (state.lt === "proj") return renderProjList();
   const q = $("q").value.trim(), k = `${cmp() ? "kt" : state.ds}_${state.dir}`;
   const rows = summary.regions.filter((r) => r.rname.includes(q)).sort((a, b) => statById[b.rid][k] - statById[a.rid][k]);
   $("regions").innerHTML = rows.map((r) =>
@@ -726,6 +777,14 @@ function layers() {
     autoHighlight: state.dir !== "out", highlightColor: A(C.fg, 220),
     updateTriggers: { getFillColor: trig, getLineColor: trig, getLineWidth: trig } }));
 
+  // 국토공간대전환 프로젝트 폴리곤 (한 색: 화살표 색과 섞이지 않게). 고른 프로젝트는 진하게
+  if (state.projOn) {
+    const P = rgb(css("--proj")), on = (f) => f.properties.id === state.proj;
+    out.push(new deck.GeoJsonLayer({ id: "projects", data: projects, pickable: true, filled: true, stroked: true,
+      getFillColor: (f) => A(P, on(f) ? 110 : 45), getLineColor: A(P, 235), getLineWidth: (f) => (on(f) ? 3 : 1.4), lineWidthUnits: "pixels",
+      autoHighlight: true, highlightColor: A(P, 90), updateTriggers: { getFillColor: [state.proj, D.theme], getLineColor: D.theme, getLineWidth: state.proj } }));
+  }
+
   // 누른 묶음: 묶음 화살표 대신 1km 출발 격자마다 화살표 (굵기 = 그 격자에서 오는 양) — 유입·유출만
   const fb = foc != null && !inner() ? D.byO.get(foc) : null;
   if (fb) {
@@ -854,6 +913,9 @@ function renderPanel() {
   $("chip").hidden = !fb;
   if (fb) $("chip-text").textContent = inner() ? `${innerName(fb)} 강조`
     : `${flowName(fb)} · 출발 격자 ${fb.gridPts.length.toLocaleString()}개${cmp() ? ` (${fb.from})` : ""}`;
+  const pj = state.proj != null ? projects.features.find((f) => f.properties.id === state.proj).properties : null;
+  $("chip-proj").hidden = !pj;
+  if (pj) $("chip-proj-t").textContent = `${pj.name} · ${pj.ktype} · ${pj.area_txt ?? ""}`;
   const pp = state.part != null ? state.partOf[state.part] : null;
   $("chip-part").hidden = !pp;
   if (pp) $("chip-part-t").textContent = `중심지 덩어리 하나만 · 격자 ${pp.n_grid}개`;
@@ -930,6 +992,10 @@ function getTooltip({ layer, object }) {
   if (inner() && (layer.id === "arrows" || layer.id === "heads")) {
     const val = cmp() ? `KT ${pct(object.sa)} · KCB ${pct(object.sb)}` : `${fmt(object.v)} ${u} · ${pct(object.share)}`;
     return { className: "tip", html: `${innerName(object)}<br>${val}` };
+  }
+  if (layer.id === "projects") {
+    const p = object.properties;
+    return { className: "tip", html: `<b>${p.name}</b><br>${p.ktype} · ${p.region}<br>${p.addr ?? ""}<br>면적 ${p.area_txt ?? `${p.area}㎢`}${p.note ? `<br><small>${p.note}</small>` : ""}` };
   }
   if (layer.id === "centers") {
     const p = object.properties, hint = state.dir === "out" ? "" : "<br><small>누르면 이 중심지 흐름만</small>";
