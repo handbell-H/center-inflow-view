@@ -4,25 +4,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>대한민국 통근시간대 통행 흐름으로 본 도시생활권</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
+/* KoPubWorld 돋움 (한국출판인회의 무료 글꼴) 부분 글꼴 — make_fonts.py. Medium 이 본문, Bold 가 굵은 글씨 */
+@font-face { font-family: "KoPubWorld Dotum"; font-weight: 100 500; font-display: swap; src: url("fonts/KoPubWorldDotum-Medium.woff2") format("woff2"); }
+@font-face { font-family: "KoPubWorld Dotum"; font-weight: 600 900; font-display: swap; src: url("fonts/KoPubWorldDotum-Bold.woff2") format("woff2"); }
 /* Layout: 왼쪽 조작 · 가운데 흐름 지도 · 오른쪽 상대 생활권 표. 좁으면 지도 → 조작 → 표 */
 :root {
   --bg: #f2f4f6; --panel: #ffffff; --fg: #17212b; --muted: #5a6672; --line: #cfd6dd; --row: #eef2f5;
   --sea: #d9e3ea; --land: #f7f6f2; --sido: #9aa6b1; --sgg: #d3d9de; --other: #9aa3ab;
-  --kt: #1d5fc4; --kcb: #c25e10; --cmp: #17212b; --proj: #7b3fb5;
-  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --kt: #1d5fc4; --kcb: #c25e10; --cmp: #17212b;
+  --font: "KoPubWorld Dotum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
-  --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; --proj: #b991f2; color-scheme: dark } }
+  --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
-  --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; --proj: #b991f2; color-scheme: dark }
+  --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark }
 html, body { height: 100%; }
 [hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px; }
@@ -38,7 +38,7 @@ h2 { font-size: 18px; font-weight: 700; margin: 0; text-wrap: balance; }
 .sub { color: var(--muted); font-size: 12px; margin: 2px 0 0; }
 .label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 6px; display: block; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-.stat b { display: block; font: 500 15px var(--mono); font-variant-numeric: tabular-nums; }
+.stat b { display: block; font: 500 15px var(--font); font-variant-numeric: tabular-nums; }
 .stat span { font-size: 11px; color: var(--muted); }
 .seg { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
 .seg button { font: inherit; border: 0; background: transparent; color: var(--fg); padding: 7px 4px; cursor: pointer; line-height: 1.3; }
@@ -49,13 +49,18 @@ h2 { font-size: 18px; font-weight: 700; margin: 0; text-wrap: balance; }
 .seg button:disabled { color: var(--muted); cursor: not-allowed; }
 .seg.sm button { padding: 5px 4px; font-size: 12px; }
 #yr { margin-top: 6px; }
+aside > section { border-top: 1px solid var(--line); padding-top: 12px; }
+aside .thr-l { margin-top: 12px; }
+.mapctl { position: absolute; right: 12px; top: 12px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  padding: 8px 10px; display: grid; gap: 7px; width: 170px; }
+.mapctl .chk { font-size: 12px; }
 .seg.kind { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
 .seg.kind button:nth-child(3) { border-left: 0; }
 .seg.kind button:nth-child(n+3) { border-top: 1px solid var(--line); }
 :root[data-mode="int"] .ext-only, :root:not([data-mode="int"]) .int-only { display: none; } /* 내부 모드 전용·외부 전용 조작 */
 button:focus-visible, input:focus-visible, select:focus-visible, li:focus-visible, tr:focus-visible { outline: 2px solid var(--ds); outline-offset: 2px; }
 select, input[type=number], input[type=search] { font: 13px var(--font); width: 100%; box-sizing: border-box; padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); }
-input[type=number] { font-family: var(--mono); }
+input[type=number] { font-family: var(--font); }
 .tp-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .link { font: inherit; font-size: 12px; border: 0; padding: 0; white-space: nowrap; background: none; color: var(--fg); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 dialog { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--fg); padding: 20px 22px; width: min(520px, calc(100% - 32px)); box-sizing: border-box; }
@@ -74,8 +79,15 @@ dialog form button { font: inherit; padding: 6px 14px; border: 1px solid var(--l
 .list { display: flex; flex-direction: column; flex: 1; min-height: 160px; }
 .list ul { list-style: none; margin: 6px 0 0; padding: 0; overflow-y: auto; flex: 1; border-top: 1px solid var(--line); }
 .list li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--line); cursor: pointer; font-size: 13px; }
-.list li em { font: normal 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
-.list li.grp { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--bg); cursor: default; }
+.list li em { font: normal 12px var(--font); color: var(--muted); font-variant-numeric: tabular-nums; }
+.list li.grp { justify-content: flex-start; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; background: var(--bg); }
+.list li.grp em { margin-left: auto; }
+.list li.grp input { margin: 0; accent-color: var(--fg); }
+.list li.grp .cv { color: var(--muted); font-weight: normal; transition: transform 0.15s; }
+.list li.grp[aria-expanded="false"] .cv { transform: rotate(-90deg); }
+.list li.grp.off > span, .list li.dim { opacity: 0.45; } /* 지도에서 끈 묶음 */
+#lg-proj { display: grid; gap: 4px; }
+#lg-proj em { margin-left: auto; padding-left: 10px; font-style: normal; color: var(--muted); }
 .list li em.tag { font-family: var(--font); font-size: 11px; }
 .list .seg { margin-bottom: 6px; }
 .list li[aria-selected="true"] { font-weight: 600; box-shadow: inset 3px 0 0 var(--ds); }
@@ -84,7 +96,7 @@ dialog form button { font: inherit; padding: 6px 14px; border: 1px solid var(--l
 table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 th { position: sticky; top: 0; background: var(--panel); text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); padding: 7px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 td { padding: 6px; border-bottom: 1px solid var(--line); }
-.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.num { text-align: right; font-family: var(--font); font-size: 12px; white-space: nowrap; }
 tbody tr { cursor: pointer; }
 tbody tr:hover, tbody tr.hot { background: var(--row); }
 tbody tr.focus { box-shadow: inset 3px 0 0 var(--fg); font-weight: 600; }
@@ -135,6 +147,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     </section>
 
     <section>
+      <h3 class="label">데이터</h3>
       <div class="seg" role="group" aria-label="OD 데이터">
         <button data-ds="kt" aria-pressed="true" title="국가교통DB 통행 OD 출근 · 화·수·목 07~09시 직장 도착 · 하루 평균">KT<small>통근 07~09시 평균</small></button>
         <button data-ds="kcb" aria-pressed="false" title="KCB 통근 OD · 직업 전체·연령 합 · 1~2명 마스킹은 1명">KCB<small>명</small></button>
@@ -146,7 +159,9 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
       </div>
     </section>
 
-    <section class="opts">
+    <section>
+      <h3 class="label">흐름</h3>
+      <div class="opts">
       <span>방향</span>
       <div class="seg sm" role="group" aria-label="방향">
         <button data-dir="in" aria-pressed="true" title="다른 생활권 → 이 생활권 중심지">유입</button>
@@ -166,35 +181,27 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
         <button data-ot="c" aria-pressed="false" title="출발 격자가 그 생활권의 중심지Ⅰ·Ⅱ">중심지</button>
         <button data-ot="p" aria-pressed="false" title="출발 격자가 중심지가 아닌 곳">주변부</button>
       </div>
-    </section>
-
-    <section>
-      <label class="label" for="thr-num" id="thr-l">임계치 (일정 통행량 이상)</label>
+      <span class="ext-only">화살표</span>
+      <div class="seg sm ext-only" role="group" aria-label="화살표 연결 단위">
+        <button data-dm="part" aria-pressed="false" title="출발 격자 → 받는 중심지 덩어리 (중심지마다 화살표)">중심지별</button>
+        <button data-dm="region" aria-pressed="true" title="생활권 중심(가장 큰 중심지) → 생활권 중심 (생활권마다 화살표 하나)">생활권 중심</button>
+      </div>
+      </div>
+      <label class="label thr-l" for="thr-num" id="thr-l">임계치 (일정 통행량 이상)</label>
       <div class="thr">
         <input id="thr-range" type="range" min="0" max="1000" step="1" aria-label="임계치 슬라이더">
         <input id="thr-num" type="number" min="0" step="any">
       </div>
     </section>
 
-    <section class="opts">
-      <span class="ext-only">화살표</span>
-      <div class="seg sm ext-only" role="group" aria-label="화살표 연결 단위">
-        <button data-dm="part" aria-pressed="false" title="출발 격자 → 받는 중심지 덩어리 (중심지마다 화살표)">중심지별</button>
-        <button data-dm="region" aria-pressed="true" title="생활권 중심(가장 큰 중심지) → 생활권 중심 (생활권마다 화살표 하나)">생활권 중심</button>
-      </div>
-      <span>배경</span>
-      <div class="seg sm" role="group" aria-label="배경지도">
-        <button id="bm-tile" data-bm="tile" aria-pressed="false">타일</button>
-        <button data-bm="vec" aria-pressed="true">행정경계</button>
-      </div>
-      <label class="chk" for="anim"><input id="anim" type="checkbox"> 흐름 애니메이션</label>
-      <label class="chk" for="proj-on"><input id="proj-on" type="checkbox"> 국토공간대전환 프로젝트 표시</label>
-    </section>
-
     <section class="list">
       <div class="seg sm" role="group" aria-label="목록">
         <button data-lt="zone" aria-pressed="true">생활권</button>
         <button data-lt="proj" aria-pressed="false" title="국토공간대전환 프로젝트 폴리곤">대전환 프로젝트</button>
+      </div>
+      <div class="seg sm" id="ptools" role="group" aria-label="프로젝트 묶음" hidden>
+        <button data-pg="type" aria-pressed="true">유형별</button>
+        <button data-pg="region" aria-pressed="false">권역별</button>
       </div>
       <input id="q" type="search" placeholder="검색" aria-label="목록 검색">
       <ul id="regions" role="listbox" aria-label="목록"></ul>
@@ -203,6 +210,14 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
 
   <div id="map">
     <div class="empty" id="empty">생활권을 고르세요</div>
+    <div class="mapctl">
+      <div class="seg sm" role="group" aria-label="배경지도">
+        <button id="bm-tile" data-bm="tile" aria-pressed="false">타일</button>
+        <button data-bm="vec" aria-pressed="true">행정경계</button>
+      </div>
+      <label class="chk" for="anim"><input id="anim" type="checkbox"> 흐름 애니메이션</label>
+      <label class="chk" for="proj-on"><input id="proj-on" type="checkbox"> 국토공간대전환 프로젝트</label>
+    </div>
     <div class="chips">
       <div class="chip" id="chip-proj" hidden><span id="chip-proj-t"></span><button id="chip-proj-x" type="button">해제</button></div>
       <div class="chip" id="chip-part" hidden><span id="chip-part-t"></span><button id="chip-part-x" type="button">해제</button></div>
@@ -210,7 +225,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     </div>
     <div class="legend">
       <div><svg width="22" height="10" aria-hidden="true"><path d="M1 5 H15" stroke="currentColor" stroke-width="3" opacity=".5"/><path d="M14 1 L21 5 L14 9 Z" fill="currentColor"/></svg><span id="lg-a"></span></div>
-      <div id="lg-proj" hidden><span class="lsw" style="background: color-mix(in srgb, var(--proj) 25%, transparent); border: 1.5px solid var(--proj)"></span><span>국토공간대전환 프로젝트</span></div>
+      <div id="lg-proj" hidden></div>
       <div id="lg-cmp" hidden><span class="lsw" style="background: linear-gradient(90deg, var(--kcb), var(--other), var(--kt))"></span><span id="lg-cmp-t"></span></div>
       <div><svg width="22" height="10" aria-hidden="true"><rect width="22" height="10" rx="2" fill="currentColor" opacity=".7"/></svg><span id="lg-c">중심지 (눌러서 덩어리 선택)</span></div>
       <small>출처 국토교통부(국토공간거점지도, 국가교통DB)</small>
@@ -243,11 +258,11 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "zNuHuMhx3j7mojyzyMMFEA==", "iter": 600000, "check": "IPh3mHyI37H8ezxjHOat93XzHPj6/TlfgyJR1jWY+GxKl3v/jooSU6LIlqJG9FoZePJBCw=="}</script>
+<script>window.__site={"salt": "dF7iP2QaiOUMbVVZTHSw3w==", "iter": 600000, "check": "CAwKUNZpT7LnSK7MUznNne2S85vJeUyVSBYEXQDDqTbva6WBVIWkTy8KiQLavsLSvLGUDA=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
-#gate input { font: 15px var(--mono); padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); }
+#gate input { font: 15px var(--font); padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); }
 #gate button { font: 600 14px var(--font); padding: 9px; border: 0; border-radius: 4px; background: var(--fg); color: var(--panel); cursor: pointer; }
 #gate .err { margin: 0; font-size: 13px; color: var(--kcb); }
 </style>
@@ -304,7 +319,7 @@ const CAT = {
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas";
 const TILES = { light: "World_Light_Gray_Base", dark: "World_Dark_Gray_Base" };
 const ARROW = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><path d='M2 6 L64 32 L2 58 L14 32 Z' fill='#fff'/></svg>");
-const state = { yr: "", lt: "zone", projOn: false, proj: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
+const state = { yr: "", lt: "zone", projOn: false, proj: null, pg: "type", poff: new Set(), popen: new Set(), projData: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
   anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "region" };
 const fac = (ds = state.ds) => (ds === "kt" ? KT_F : 1);
 const unit = () => (state.ds === "cmp" ? "%" : state.ds === "kt" ? "통행" : "명");
@@ -363,6 +378,7 @@ async function ensureVec() {
 async function init() {
   const tiles = probeTiles();
   [regions, centers, summary, labels, G, Z, projects] = await Promise.all(["regions", "centers", "summary", "labels", "grids", "gridzone", "projects"].map(load));
+  state.projData = projects;
   rname = summary.regions.map((r) => short(r.rname));
   RID = summary.regions.map((r) => r.rid);
   RID.forEach((r, i) => (ridIdx[r] = i));
@@ -384,7 +400,7 @@ async function init() {
   state.tilesOK = await tiles;
   state.bm = state.tilesOK ? "tile" : "vec";
   if (state.bm === "vec") await ensureVec();
-  await document.fonts.ready;
+  await Promise.all(["500", "700"].map((w) => document.fonts.load(`${w} 12px "KoPubWorld Dotum"`))); // 지도 글자(TextLayer)가 쓰기 전에
   deckgl = new deck.Deck({
     parent: $("map"),
     initialViewState: { longitude: 127.8, latitude: 36.1, zoom: 6.2 },
@@ -450,6 +466,7 @@ function wire() {
   $("chip-x").addEventListener("click", () => toggleFocus(state.focusO));
   $("chip-part-x").addEventListener("click", () => togglePart(state.part));
   $("chip-proj-x").addEventListener("click", () => selectProj(state.proj));
+  on("pg", (v) => { state.pg = v; syncControls(); renderList(); });
   on("lt", (v) => { state.lt = v; if (v === "proj") state.projOn = true; $("q").value = ""; syncControls(); renderList(); draw(); });
   $("proj-on").addEventListener("change", (e) => { state.projOn = e.target.checked; if (!state.projOn) state.proj = null; syncControls(); renderList(); renderPanel(); draw(); });
   const tb = $("tbody");
@@ -475,6 +492,11 @@ function syncControls(updateRange = true) {
   document.documentElement.dataset.mode = state.dir;
   $("proj-on").checked = state.projOn;
   $("lg-proj").hidden = !state.projOn;
+  const pn = {};
+  state.projData.features.forEach(({ properties: p }) => (pn[p.ktype] = (pn[p.ktype] ?? 0) + 1));
+  $("lg-proj").innerHTML = Object.keys(pn).sort((a, b) => Object.keys(PTYPE).indexOf(a) - Object.keys(PTYPE).indexOf(b)).map((t) =>
+    `<div><span class="lsw" style="background:${pcolor(t)}73; border: 1.5px solid ${pcolor(t)}"></span><span>${t}</span><em>${pn[t]}곳</em></div>`).join("");
+  $("ptools").hidden = state.lt !== "proj";
   $("q").placeholder = state.lt === "proj" ? "프로젝트·유형·권역 검색" : "생활권 검색";
   // 연도 버튼: 지금 데이터의 연도 (비교면 KT·KCB 짝)
   const yl = (y) => (state.ds !== "cmp" ? y[state.ds] : y.kt === y.kcb ? y.kt : `KT ${y.kt} · KCB ${y.kcb}`);
@@ -482,7 +504,7 @@ function syncControls(updateRange = true) {
   document.querySelectorAll("[data-yr]").forEach((b) => { if (SUM[b.dataset.yr]) b.textContent = yl(SUM[b.dataset.yr].years); });
   const y = SUM[state.yr].years;
   $("sub").textContent = `KT ${y.kt} · KCB ${y.kcb} · 생활권(목표 자족도 75%)·중심지Ⅰ·Ⅱ 2025`;
-  for (const [attr, key] of [["yr", "yr"], ["lt", "lt"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"]])
+  for (const [attr, key] of [["yr", "yr"], ["pg", "pg"], ["lt", "lt"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"]])
     document.querySelectorAll(`[data-${attr}]`).forEach((x) => x.setAttribute("aria-pressed", x.dataset[attr] === state[key]));
   $("bm-tile").disabled = !state.tilesOK;
   $("bm-tile").title = state.tilesOK ? "" : "이 환경에서는 외부 지도 타일을 불러올 수 없습니다";
@@ -496,17 +518,40 @@ function syncControls(updateRange = true) {
   $("lg-c").textContent = state.dir === "out" ? "도착 중심지 (마우스 올리면 이름)" : "중심지 (마우스 올리면 이름, 누르면 그 중심지만)";
 }
 
-// 국토공간대전환 프로젝트 목록: 유형별로 묶음 (많은 유형 먼저), 검색은 이름·유형·권역
-const PTYPES = ["국가산단", "혁신도시", "국립대병원", "거점국립대", "캠퍼스혁신파크", "도심융합특구", "과기원", "3대 메가 프로젝트", "행복도시"];
+// 국토공간대전환 프로젝트: 유형 색·순서·권역은 원래 대전환 대시보드(국토공간대전환_지도_v2_0715)와 같게
+const PTYPE = { 행복도시: "#EA580C", 혁신도시: "#2563EB", 국가산단: "#D97706", 도심융합특구: "#DB2777", 캠퍼스혁신파크: "#16A34A",
+  거점국립대: "#EAB308", 과기원: "#9333EA", 국립대병원: "#14B8A6", "3대 메가 프로젝트": "#92400E" };
+const PREGION = ["수도권", "동남권", "대경권", "중부권", "서남권", "강원", "전북", "제주"];
+const pcolor = (t) => PTYPE[t] ?? "#6b7280";
+const pkey = (p) => (state.pg === "type" ? p.ktype : p.region);
+// 켜 둔 유형·권역만 지도에 (둘 다 걸림, 고른 프로젝트는 늘). 그릴 데이터는 바뀔 때만 새로 만든다 (draw 는 매 프레임)
+const projVis = (p) => !state.poff.has(`type:${p.ktype}`) && !state.poff.has(`region:${p.region}`);
+function projChanged() {
+  state.projData = { ...projects, features: projects.features.filter(({ properties: p }) => projVis(p) || p.id === state.proj) };
+  syncControls(); renderList(); draw();
+}
+
+// 목록: 유형별·권역별 묶음. 묶음 줄을 누르면 펼침, 체크는 지도 표시. 검색하면 맞는 묶음을 모두 펼침
 function renderProjList() {
-  const q = $("q").value.trim(), fs = projects.features.map((f) => f.properties)
-    .filter((p) => !q || [p.name, p.ktype, p.region].some((x) => x?.includes(q)));
-  const types = [...new Set([...PTYPES, ...fs.map((p) => p.ktype)])];
-  $("regions").innerHTML = types.map((t) => {
-    const g = fs.filter((p) => p.ktype === t);
-    return g.length ? `<li class="grp">${t} · ${g.length}</li>` + g.map((p) =>
-      `<li role="option" tabindex="0" data-proj="${p.id}" aria-selected="${p.id === state.proj}"><span>${p.name}</span><em class="tag">${p.region}</em></li>`).join("") : "";
+  const q = $("q").value.trim(), by = state.pg;
+  const fs = projects.features.map((f) => f.properties).filter((p) => !q || [p.name, p.ktype, p.region].some((x) => x?.includes(q)));
+  const keys = [...new Set([...(by === "type" ? Object.keys(PTYPE) : PREGION), ...fs.map(pkey)])];
+  $("regions").innerHTML = keys.map((k) => {
+    const g = fs.filter((p) => pkey(p) === k), id = `${by}:${k}`, open = !!q || state.popen.has(id), on = !state.poff.has(id);
+    if (!g.length) return "";
+    return `<li class="grp${on ? "" : " off"}" tabindex="0" data-g="${id}" aria-expanded="${open}"><input type="checkbox"${on ? " checked" : ""} aria-label="${k} 지도 표시">` +
+      (by === "type" ? `<span class="sw" style="background:${pcolor(k)}"></span>` : "") + `<span>${k}</span><em>${g.length}</em><span class="cv">▾</span></li>` +
+      (open ? g.map((p) => `<li role="option" tabindex="0" data-proj="${p.id}" aria-selected="${p.id === state.proj}"${projVis(p) ? "" : ' class="dim"'}><span>` +
+        (by === "region" ? `<span class="sw" style="background:${pcolor(p.ktype)}"></span> ` : "") +
+        `${p.name}</span><em class="tag">${by === "type" ? p.region : p.ktype}</em></li>`).join("") : "");
   }).join("");
+  $("regions").querySelectorAll("li.grp").forEach((li) => {
+    const id = li.dataset.g;
+    li.querySelector("input").addEventListener("change", () => { state.poff.has(id) ? state.poff.delete(id) : state.poff.add(id); state.projOn = true; projChanged(); });
+    const fold = () => { state.popen.has(id) ? state.popen.delete(id) : state.popen.add(id); renderList(); };
+    li.addEventListener("click", (e) => { if (e.target.tagName !== "INPUT") fold(); });
+    li.addEventListener("keydown", (e) => { if (e.target === li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fold(); } });
+  });
   $("regions").querySelectorAll("li[data-proj]").forEach((li) => {
     li.addEventListener("click", () => selectProj(+li.dataset.proj));
     li.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectProj(+li.dataset.proj); } });
@@ -519,6 +564,7 @@ function selectProj(id) {
   if (state.proj != null) {
     state.projOn = true;
     const f = projects.features.find((x) => x.properties.id === id);
+    state.popen.add(`${state.pg}:${pkey(f.properties)}`); // 목록에서 보이게
     let [x0, y0, x1, y1] = [180, 90, -180, -90];
     const walk = (c) => typeof c[0] === "number" ? (x0 = Math.min(x0, c[0]), y0 = Math.min(y0, c[1]), x1 = Math.max(x1, c[0]), y1 = Math.max(y1, c[1])) : c.forEach(walk);
     walk(f.geometry.coordinates);
@@ -526,7 +572,7 @@ function selectProj(id) {
     const vp = new deck.WebMercatorViewport({ width, height }).fitBounds([[x0, y0], [x1, y1]], { padding: Math.min(width, height) * 0.3 });
     deckgl.setProps({ initialViewState: { longitude: vp.longitude, latitude: vp.latitude, zoom: Math.min(vp.zoom, 13), transitionDuration: 700 } });
   }
-  syncControls(); renderList(); renderPanel(); draw();
+  renderPanel(); projChanged();
 }
 
 function renderList() {
@@ -781,7 +827,7 @@ function layers() {
     const lv = state.zoom >= 8.3 ? "sgg" : "sido";
     out.push(new deck.TextLayer({ id: `labels-${lv}`, data: labels.filter((l) => l[3] === lv), characterSet: "auto",
       getText: (l) => l[0], getPosition: (l) => [l[1], l[2]], getSize: 11, getColor: A(C.muted, 200),
-      fontFamily: "IBM Plex Sans KR, Malgun Gothic, sans-serif", fontWeight: 500, updateTriggers: { getColor: D.theme } }));
+      fontFamily: "KoPubWorld Dotum, Malgun Gothic, sans-serif", fontWeight: 500, updateTriggers: { getColor: D.theme } }));
   }
 
   // 중심지 (화살표 아래): 유입·내부면 이 생활권 덩어리(눌러서 하나만), 유출이면 화살표가 닿는 상대 생활권 덩어리.
@@ -799,12 +845,13 @@ function layers() {
     autoHighlight: state.dir !== "out", highlightColor: A(C.fg, 220),
     updateTriggers: { getFillColor: trig, getLineColor: trig, getLineWidth: trig } }));
 
-  // 국토공간대전환 프로젝트 폴리곤 (한 색: 화살표 색과 섞이지 않게). 고른 프로젝트는 진하게
+  // 국토공간대전환 프로젝트 폴리곤: 유형별 색 (원래 대전환 대시보드와 같음), 켜 둔 유형·권역만. 고른 프로젝트는 진하게
   if (state.projOn) {
-    const P = rgb(css("--proj")), on = (f) => f.properties.id === state.proj;
-    out.push(new deck.GeoJsonLayer({ id: "projects", data: projects, pickable: true, filled: true, stroked: true,
-      getFillColor: (f) => A(P, on(f) ? 110 : 45), getLineColor: A(P, 235), getLineWidth: (f) => (on(f) ? 3 : 1.4), lineWidthUnits: "pixels",
-      autoHighlight: true, highlightColor: A(P, 90), updateTriggers: { getFillColor: [state.proj, D.theme], getLineColor: D.theme, getLineWidth: state.proj } }));
+    const on = (f) => f.properties.id === state.proj;
+    out.push(new deck.GeoJsonLayer({ id: "projects", data: state.projData, pickable: true, filled: true, stroked: true,
+      getFillColor: (f) => rgb(pcolor(f.properties.ktype), on(f) ? 170 : 95), getLineColor: (f) => rgb(pcolor(f.properties.ktype), 240),
+      getLineWidth: (f) => (on(f) ? 3 : 1.4), lineWidthUnits: "pixels", autoHighlight: true, highlightColor: A(C.fg, 50),
+      updateTriggers: { getFillColor: state.proj, getLineWidth: state.proj } }));
   }
 
   // 누른 묶음: 묶음 화살표 대신 1km 출발 격자마다 화살표 (굵기 = 그 격자에서 오는 양) — 유입·유출만
@@ -860,7 +907,7 @@ function layers() {
   const named = regs.filter((x, i) => i < 5 || x.r === hb?.r).map((x) => x.top);
   out.push(new deck.TextLayer({ id: "names", data: named, characterSet: "auto", getText: (b) => rname[b.r],
     getPosition: (b) => state.dir === "in" ? b.src : b.dst, getSize: 12, getColor: C.fg, getPixelOffset: [0, -14], fontWeight: 600,
-    fontFamily: "IBM Plex Sans KR, Malgun Gothic, sans-serif", background: true, backgroundPadding: [4, 2],
+    fontFamily: "KoPubWorld Dotum, Malgun Gothic, sans-serif", background: true, backgroundPadding: [4, 2],
     getBackgroundColor: A(C.panel, 225), getBorderColor: (b) => b.color, getBorderWidth: 1,
     updateTriggers: { getBackgroundColor: D.theme, getColor: D.theme, getBorderColor: trig, getPosition: trig } }));
   return out;
@@ -1017,7 +1064,7 @@ function getTooltip({ layer, object }) {
   }
   if (layer.id === "projects") {
     const p = object.properties;
-    return { className: "tip", html: `<b>${p.name}</b><br>${p.ktype} · ${p.region}<br>${p.addr ?? ""}<br>면적 ${p.area_txt ?? `${p.area}㎢`}${p.note ? `<br><small>${p.note}</small>` : ""}` };
+    return { className: "tip", html: `<b>${p.name}</b><br><span class="sw" style="background:${pcolor(p.ktype)}"></span> ${p.ktype} · ${p.region}<br>${p.addr ?? ""}<br>면적 ${p.area_txt ?? `${p.area}㎢`}${p.note ? `<br><small>${p.note}</small>` : ""}` };
   }
   if (layer.id === "centers") {
     const p = object.properties, hint = state.dir === "out" ? "" : "<br><small>누르면 이 중심지 흐름만</small>";
