@@ -59,8 +59,9 @@ aside .thr-l { margin-top: 12px; }
 .mapctl { position: absolute; right: 12px; top: 12px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
   padding: 8px 10px; display: grid; gap: 7px; width: 170px; }
 .mapctl .chk { font-size: 12px; }
-.mapctl > button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 5px 8px; cursor: pointer; }
-.mapctl > button[aria-pressed="true"] { background: var(--ds); border-color: var(--ds); color: var(--panel); font-weight: 600; }
+.mapctl .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.mapctl .btns button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 5px 8px; cursor: pointer; }
+.mapctl .btns button[aria-pressed="true"] { background: var(--ds); border-color: var(--ds); color: var(--panel); font-weight: 600; }
 .rtype { margin-top: 10px; display: grid; gap: 4px; }
 .rtype div { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 6px; }
 .rtype b { font-size: 15px; font-weight: 600; }
@@ -234,7 +235,10 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
         <button data-bm="vec" aria-pressed="true">행정경계</button>
         <button data-bm="dom" aria-pressed="false" title="생활권마다 유입÷유출 단계를 1km 격자에 칠함">우세지도</button>
       </div>
-      <button id="natl" type="button" hidden title="생활권 선택을 풀고 전국 우세지도 (유입우세·균형·유출우세 3단계)">전국 보기</button>
+      <div class="btns" id="dom-btns" hidden>
+        <button id="natl" type="button" title="생활권 선택을 풀고 전국 우세지도 (유입우세·균형·유출우세 3단계)">전국 보기</button>
+        <button id="dom-reset" type="button" title="생활권 선택·전국 보기를 풀고 처음 상태로 (전국 줌)">초기화</button>
+      </div>
       <label class="chk" for="anim"><input id="anim" type="checkbox"> 흐름 애니메이션</label>
       <label class="chk" for="proj-on"><input id="proj-on" type="checkbox"> 국토공간대전환 프로젝트</label>
     </div>
@@ -280,7 +284,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "gGV2WY206VTGev9L+HajlA==", "iter": 600000, "check": "m7CKXR+3a+2a7K+wNJRoiyvy+PDpA04PK4U3R9UT56x49357dxiCy3rCoC8CJXUOYRkuFQ=="}</script>
+<script>window.__site={"salt": "tYAAhKlr8bKt4nQenNMfEg==", "iter": 600000, "check": "OC6olGJq9pOibn+4kOrePNnExs1LyJWsS79dVMbbHydKKrTs+fWyD0fTsJDjNOXySrC3HQ=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -519,14 +523,17 @@ function wire() {
     state.bm = v; if (v !== "tile") await ensureVec(); syncControls(); draw();
     if (toDom && state.rid && !pm()) fitTo(state.rid); // 우세지도는 그 생활권만 보이게 줌
   });
-  // 전국 보기 (우세지도에서만 보임): 생활권·프로젝트 선택을 풀고 전 생활권 3단계
-  $("natl").addEventListener("click", () => {
+  // 우세지도에서만 보이는 두 버튼 — 둘 다 생활권·프로젝트 선택을 풀고 전국으로 줌.
+  // 전국 보기 = 전 생활권 3색, 초기화 = 아무것도 칠하지 않은 처음 상태
+  const domHome = (all) => {
     if (pm()) state.projData = { ...projects, features: projects.features.filter(({ properties: p }) => !state.poff.has(p.ktype)) };
-    Object.assign(state, { domAll: true, rid: null, proj: null, part: null, focusO: null, hoverO: null });
+    Object.assign(state, { domAll: all, rid: null, proj: null, part: null, focusO: null, hoverO: null });
     history.replaceState(null, "", location.pathname);
     deckgl.setProps({ initialViewState: { ...KOREA, transitionDuration: 600 } });
     reset();
-  });
+  };
+  $("natl").addEventListener("click", () => domHome(true));
+  $("dom-reset").addEventListener("click", () => domHome(false));
   $("src-b").addEventListener("click", () => $("src-d").showModal());
   $("thr-range").addEventListener("input", (e) => { state.thr[tk()] = fromSlider(+e.target.value); syncControls(false); applyThreshold(); draw(); });
   $("thr-num").addEventListener("change", (e) => { state.thr[tk()] = Math.max(0, +e.target.value || 0); syncControls(); applyThreshold(); draw(); });
@@ -1052,7 +1059,7 @@ function fitTo(rid) {
 // ── 패널 ───────────────────────────────────────────────────
 // 우세지도 범례 (전국 보기 3색 / 고른 생활권 유입 : 유출 몫 / 둘 다 아니면 안내)와 전국 보기 버튼
 function domLegend() {
-  $("lg-dom").hidden = $("natl").hidden = state.bm !== "dom";
+  $("lg-dom").hidden = $("dom-btns").hidden = state.bm !== "dom";
   $("natl").setAttribute("aria-pressed", state.domAll);
   if (state.bm !== "dom") { $("dombar").hidden = true; return; }
   const ds = domDs(), one = state.rid && !pm() && !state.domAll, yl = `${ds.toUpperCase()} ${SUM[state.yr].years[ds]}`;
