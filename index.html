@@ -13,22 +13,22 @@
   --bg: #f2f4f6; --panel: #ffffff; --fg: #17212b; --muted: #5a6672; --line: #cfd6dd; --row: #eef2f5;
   --sea: #d9e3ea; --land: #f7f6f2; --sido: #9aa6b1; --sgg: #d3d9de; --other: #9aa3ab;
   --kt: #1d5fc4; --kcb: #c25e10; --cmp: #17212b;
-  --dom-in: #f28c28; --dom-eq: #d6d4ce; --dom-out: #56b4e9; /* 우세지도 유입(주황) · 균형 · 유출(하늘) */
+  --dom-in: #56b4e9; --dom-eq: #d6d4ce; --dom-out: #e87ba4; /* 우세지도 유입(하늘) · 균형 · 유출(분홍) */
   --dom-int: #1baf7a; --dom-ext: #6250d6; /* 내부(초록) · 외부(보라) */
-  --dom-in-int: #ec9a4a; --dom-in-ext: #b8500c; --dom-out-int: #4fa6dc; --dom-out-ext: #1d64a0; /* 둘 다: 2×2 겹침 */
+  --dom-in-int: #5cb8ea; --dom-in-ext: #1d64a0; --dom-out-int: #e06a98; --dom-out-ext: #b02d65; /* 둘 다: 2×2 겹침 */
   --font: "KoPubWorld Dotum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
-  --dom-in: #d9771a; --dom-eq: #45443f; --dom-out: #3597cf;
-  --dom-int: #199e70; --dom-ext: #9085e9; --dom-in-int: #cc7e34; --dom-in-ext: #9e4208; --dom-out-int: #4a9bd2; --dom-out-ext: #2766a6;
+  --dom-in: #3597cf; --dom-eq: #45443f; --dom-out: #d55181;
+  --dom-int: #199e70; --dom-ext: #9085e9; --dom-in-int: #4a9bd2; --dom-in-ext: #2766a6; --dom-out-int: #d8669a; --dom-out-ext: #a33266;
   --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
-  --dom-in: #d9771a; --dom-eq: #45443f; --dom-out: #3597cf;
-  --dom-int: #199e70; --dom-ext: #9085e9; --dom-in-int: #cc7e34; --dom-in-ext: #9e4208; --dom-out-int: #4a9bd2; --dom-out-ext: #2766a6;
+  --dom-in: #3597cf; --dom-eq: #45443f; --dom-out: #d55181;
+  --dom-int: #199e70; --dom-ext: #9085e9; --dom-in-int: #4a9bd2; --dom-in-ext: #2766a6; --dom-out-int: #d8669a; --dom-out-ext: #a33266;
   --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark }
 html, body { height: 100%; }
 [hidden] { display: none !important; }
@@ -301,7 +301,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "/AI9rKTxPo0HC7si95C++g==", "iter": 600000, "check": "SwzTPa2qZx3Oi1egXsBv8ykQri0JA8QUM2IjRSpl4AQt4O7LZe9bigz+gHYRmdHdUWNR4A=="}</script>
+<script>window.__site={"salt": "YpZ+xuMDM2P2mzVwiG4LTg==", "iter": 600000, "check": "Rkw32n91y7bJrJK+xLVqFusqSHqDSTJJxzCDNdBmm5JqmlmRQ4WIHouoznCEF4Kmh9tK7Q=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
