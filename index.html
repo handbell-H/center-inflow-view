@@ -14,17 +14,21 @@
   --sea: #d9e3ea; --land: #f7f6f2; --sido: #9aa6b1; --sgg: #d3d9de; --other: #9aa3ab;
   --kt: #1d5fc4; --kcb: #c25e10; --cmp: #17212b;
   --dom-in: #f28c28; --dom-eq: #d6d4ce; --dom-out: #56b4e9; /* 우세지도 유입(주황) · 균형 · 유출(하늘) */
+  --dom-int: #1baf7a; --dom-ext: #6250d6; /* 내부(초록) · 외부(보라) */
+  --dom-in-int: #ec9a4a; --dom-in-ext: #b8500c; --dom-out-int: #4fa6dc; --dom-out-ext: #1d64a0; /* 둘 다: 2×2 겹침 */
   --font: "KoPubWorld Dotum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
   --dom-in: #d9771a; --dom-eq: #45443f; --dom-out: #3597cf;
+  --dom-int: #199e70; --dom-ext: #9085e9; --dom-in-int: #cc7e34; --dom-in-ext: #9e4208; --dom-out-int: #4a9bd2; --dom-out-ext: #2766a6;
   --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
   --dom-in: #d9771a; --dom-eq: #45443f; --dom-out: #3597cf;
+  --dom-int: #199e70; --dom-ext: #9085e9; --dom-in-int: #cc7e34; --dom-in-ext: #9e4208; --dom-out-int: #4a9bd2; --dom-out-ext: #2766a6;
   --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark }
 html, body { height: 100%; }
 [hidden] { display: none !important; }
@@ -57,7 +61,7 @@ h2 { font-size: 18px; font-weight: 700; margin: 0; text-wrap: balance; }
 aside > section { border-top: 1px solid var(--line); padding-top: 12px; }
 aside .thr-l { margin-top: 12px; }
 .mapctl { position: absolute; right: 12px; top: 12px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
-  padding: 8px 10px; display: grid; gap: 7px; width: 170px; }
+  padding: 8px 10px; display: grid; gap: 7px; width: 196px; }
 .mapctl .chk { font-size: 12px; }
 .mapctl .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .mapctl .btns button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 5px 8px; cursor: pointer; }
@@ -125,14 +129,21 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
 .chip { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; display: flex; gap: 10px; align-items: center; }
 .chip button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
 .empty { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; font-size: 13px; }
-/* 우세지도에서 고른 생활권의 유입 : 유출 막대 (지도 위 가운데) */
-.dombar { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 2; user-select: none; width: min(380px, 52%);
-  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; font-size: 13px; display: grid; gap: 6px; }
+/* 우세지도에서 고른 생활권의 비율 막대 (지도 왼쪽 위, 비율마다 한 단 — 둘 다면 두 단, 좁으면 아래로) */
+.dombar { position: absolute; left: 12px; top: 12px; z-index: 2; user-select: none; box-sizing: border-box; width: min(400px, calc(100% - 256px)); /* 오른쪽 조작 상자와 안 겹치게 */
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; font-size: 13px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 14px; }
+.dombar.two { width: min(680px, calc(100% - 256px)); }
+.dombar > .hd { grid-column: 1 / -1; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.dombar .col { display: grid; gap: 6px; align-content: start; }
 .dombar small { color: var(--muted); font-size: 11px; }
 .dombar .bar { display: flex; gap: 2px; height: 14px; }
 .dombar .bar i { border-radius: 4px; min-width: 2px; }
 .dombar .lab { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
 .dombar .lab b { color: var(--fg); font-weight: 600; }
+.dombar .grp { display: grid; gap: 4px; }
+.dombar .grp + .grp { border-top: 1px solid var(--line); padding-top: 6px; }
+.dombar .sec { font-size: 12px; font-weight: 600; }
 .tip { font-family: var(--font) !important; font-size: 12px !important; line-height: 1.55; background: var(--panel) !important; color: var(--fg) !important; border: 1px solid var(--line); border-radius: 4px; }
 @media (max-width: 1200px) {
   .app { grid-template-columns: 280px 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 40%); grid-template-areas: "side map" "side table"; }
@@ -239,6 +250,11 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
         <button id="natl" type="button" title="생활권 선택을 풀고 전국 우세지도 (유입우세·균형·유출우세 3단계)">전국 보기</button>
         <button id="dom-reset" type="button" title="생활권 선택·전국 보기를 풀고 처음 상태로 (전국 줌)">초기화</button>
       </div>
+      <div class="seg sm" id="dv" role="group" aria-label="우세지도 비율" hidden>
+        <button data-dv="io" aria-pressed="true" title="유입 : 유출 (도착이 중심지인 통근)">유입·유출</button>
+        <button data-dv="ie" aria-pressed="false" title="내부(생활권 안) : 외부(생활권 밖과 오간) 통근">내부·외부</button>
+        <button data-dv="both" aria-pressed="false" title="두 비율을 한 번에 — 막대 넷, 지도는 2×2 겹침색">둘 다</button>
+      </div>
       <label class="chk" for="cline" id="cline-l" hidden><input id="cline" type="checkbox" checked> 중심지 경계</label>
       <label class="chk" for="anim"><input id="anim" type="checkbox"> 흐름 애니메이션</label>
       <label class="chk" for="proj-on"><input id="proj-on" type="checkbox"> 국토공간대전환 프로젝트</label>
@@ -285,7 +301,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "xPQmeF5Wwz6BjSuwqiJ9Ug==", "iter": 600000, "check": "WspGVUOuq4gpdZfwcgh+Pw6rAd/SiVjpiLby2ciZMV58Lz5iPrh1El8dsl/jyEHINputUw=="}</script>
+<script>window.__site={"salt": "/AI9rKTxPo0HC7si95C++g==", "iter": 600000, "check": "SwzTPa2qZx3Oi1egXsBv8ykQri0JA8QUM2IjRSpl4AQt4O7LZe9bigz+gHYRmdHdUWNR4A=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -347,7 +363,7 @@ const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas";
 const TILES = { light: "World_Light_Gray_Base", dark: "World_Dark_Gray_Base" };
 const ARROW = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><path d='M2 6 L64 32 L2 58 L14 32 Z' fill='#fff'/></svg>");
 const state = { yr: "", projOn: false, proj: null, poff: new Set(), projData: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
-  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "region", domAll: false, cline: true };
+  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "region", domAll: false, cline: true, dv: "io" };
 const fac = (ds = state.ds) => (ds === "kt" ? KT_F : 1);
 const unit = () => (state.ds === "cmp" ? "%" : state.ds === "kt" ? "통행" : "명");
 const short = (n) => n.replace(/생활권$/, "권"); // 서울·광명생활권 → 서울·광명권
@@ -374,21 +390,36 @@ let D = { list: [], shown: [], trips: [], dots: [], dotsShown: [], byO: new Map(
 const $ = (id) => document.getElementById(id);
 const fmt = (v) => v >= 100 ? Math.round(v).toLocaleString() : v >= 10 ? v.toFixed(1) : v.toFixed(2);
 const pct = (v) => `${(100 * v).toFixed(1)}%`;
-// 생활권 유형: 유입 ÷ 유출 × 100 — 유입 = 다른 생활권 → 이 생활권 중심지, 유출 = 이 생활권 → 다른 생활권 중심지 (생활권 전체 합).
-// 105 초과 유입우세형, 95 미만 유출우세형, 그 사이 균형형 (11-06 사용자 지정, 처음엔 99~101). 0/0 이면 "–"
-const ratio = (rid, ds) => (100 * statById[rid][`${ds}_in`]) / statById[rid][`${ds}_out`];
-const share = (rid, ds) => { const s = statById[rid]; return s[`${ds}_in`] / (s[`${ds}_in`] + s[`${ds}_out`]); }; // 유입 : 유출 중 유입 몫
+// 우세지도 비율 두 가지 (m): io = 유입 : 유출, ie = 내부 : 외부. sc = "all" 생활권 전체 / "c" 중심지. 값은 summary stats.
+//  io: 유입 = 다른 생활권 → 이 생활권 중심지, 유출 = 이 생활권 → 다른 생활권 중심지 (중심지 = 중심지 격자에서 나간 것만) — 생활권 유형
+//  ie: 내부 = 생활권 안 통근 (같은 격자 안 포함), 외부 = 생활권 밖과 오간 통근 (도착·출발 격자 종류 무관) (중심지 = 한쪽 끝이 중심지 격자)
+// ÷ × 100 이 105 초과면 앞쪽 우세, 95 미만이면 뒤쪽 우세, 그 사이 균형형 (11-06 사용자 지정, 처음엔 99~101). 0/0 이면 "–"
+const pairOf = (rid, ds, m, sc = "all") => {
+  const s = statById[rid], k = (x) => s[`${ds}_${x}`];
+  return m === "io" ? [k("in"), k(sc === "c" ? "outc" : "out")] : sc === "c" ? [k("ic"), k("xc")] : [k("iall"), k("xin") + k("xout")];
+};
+const ratio = (rid, ds, m = "io", sc = "all") => { const [a, b] = pairOf(rid, ds, m, sc); return (100 * a) / b; };
 const rfmt = (x) => (isFinite(x) ? x.toFixed(1) : "–");
-const domLevel = (x) => (!(x >= 0) ? null : x > 105 ? "in" : x < 95 ? "out" : "eq"); // 우세지도 색 키 (--dom-in·eq·out)
-const typeName = (x) => ({ in: "유입우세형", out: "유출우세형", eq: "균형형" })[domLevel(x)] ?? "–";
+const DV = { io: { hi: "in", lo: "out", lab: ["유입", "유출"], div: "유입÷유출" }, ie: { hi: "int", lo: "ext", lab: ["내부", "외부"], div: "내부÷외부" } };
+// 색 키 (--dom-*): in·out·int·ext·eq, 둘 다면 in-int 처럼 겹침
+const KEYN = { in: "유입우세", out: "유출우세", int: "내부우세", ext: "외부우세", eq: "균형",
+  "in-int": "유입·내부우세", "in-ext": "유입·외부우세", "out-int": "유출·내부우세", "out-ext": "유출·외부우세" };
+const domLevel = (x, m = "io") => (!(x >= 0) ? null : x > 105 ? DV[m].hi : x < 95 ? DV[m].lo : "eq");
+const typeName = (x, m = "io") => { const l = domLevel(x, m); return l == null ? "–" : `${KEYN[l]}형`; };
 const domDs = () => (cmp() ? "kt" : state.ds); // 비교 모드의 우세지도는 KT 기준
 const dsUnit = (ds) => (ds === "kt" ? "통행" : "명");
-// 우세지도에서 고른 생활권 격자마다 [생활권 밖 → 격자, 격자 → 생활권 밖] (data gio). 많은 쪽이 그 격자의 우세
-const gLevel = (v) => (!v ? null : v[0] > v[1] ? "in" : v[0] < v[1] ? "out" : "eq");
+// 우세지도 격자: gio [생활권 밖 → 격자, 격자 → 생활권 밖, 생활권 안]. io = 앞 둘, ie = 생활권 안 vs 밖과 오간 합. 많은 쪽이 우세
+const gLevel = (v, m = "io") => {
+  if (!v) return null;
+  const [a, b] = m === "io" ? [v[0], v[1]] : [v[2], v[0] + v[1]];
+  return a + b === 0 ? null : a > b ? DV[m].hi : a < b ? DV[m].lo : "eq"; // 밖과 오간 통근이 없는 격자는 유입·유출 칠 없음
+};
+// 칠할 색 키: 고른 비율(state.dv) 하나면 그 단계, 둘 다면 2×2 겹침 (어느 한쪽이라도 균형·같음이면 회색)
+const domKey = (io, ie) => (state.dv === "io" ? io : state.dv === "ie" ? ie : io == null || ie == null ? null : io === "eq" || ie === "eq" ? "eq" : `${io}-${ie}`);
 function gioOf(rid, ds) {
   const doc = state.flows[rid], key = `${state.yr}|${rid}|${ds}`;
   if (!doc) return new Map();
-  if (state.gioKey !== key) { state.gioKey = key; state.gio = new Map((doc.gio?.[ds] ?? []).map(([g, a, b]) => [g, [a, b]])); }
+  if (state.gioKey !== key) { state.gioKey = key; state.gio = new Map((doc.gio?.[ds] ?? []).map(([g, ...v]) => [g, v])); }
   return state.gio;
 }
 const KOREA = { longitude: 127.8, latitude: 36.1, zoom: 6.2 };
@@ -534,6 +565,10 @@ function wire() {
     reset();
   };
   $("natl").addEventListener("click", () => domHome(true));
+  on("dv", (v) => { // 우세지도 비율: 유입·유출 / 내부·외부 / 둘 다 (막대 높이가 바뀌니 고른 생활권이면 다시 줌)
+    state.dv = v; syncControls(); draw();
+    if (state.rid && !pm() && !state.domAll) fitTo(state.rid);
+  });
   $("cline").addEventListener("change", (e) => { state.cline = e.target.checked; domLegend(); draw(); });
   $("dom-reset").addEventListener("click", () => domHome(false));
   $("src-b").addEventListener("click", () => $("src-d").showModal());
@@ -584,7 +619,7 @@ function syncControls(updateRange = true) {
   const y = SUM[state.yr].years;
   $("sub").textContent = `KT ${y.kt} · KCB ${y.kcb} · 생활권(목표 자족도 75%)·중심지Ⅰ·Ⅱ 2025`;
   domLegend();
-  for (const [attr, key] of [["yr", "yr"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"]])
+  for (const [attr, key] of [["yr", "yr"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"], ["dv", "dv"]])
     document.querySelectorAll(`[data-${attr}]`).forEach((x) => x.setAttribute("aria-pressed", x.dataset[attr] === state[key]));
   $("bm-tile").disabled = !state.tilesOK;
   $("bm-tile").title = state.tilesOK ? "" : "이 환경에서는 외부 지도 타일을 불러올 수 없습니다";
@@ -774,7 +809,7 @@ function rebuild() {
   const pal = CAT[isDark() ? "dark" : "light"];
   D.C = { fg: rgb(css("--fg")), panel: rgb(css("--panel")), muted: rgb(css("--muted")), other: rgb(css("--other")),
     kt: rgb(css("--kt")), kcb: rgb(css("--kcb")), land: rgb(css("--land")), sido: rgb(css("--sido")), sgg: rgb(css("--sgg")),
-    dom: { in: rgb(css("--dom-in")), eq: rgb(css("--dom-eq")), out: rgb(css("--dom-out")) } };
+    dom: Object.fromEntries(Object.keys(KEYN).map((k) => [k, rgb(css(`--dom-${k}`))])) };
   D.theme = isDark() ? "dark" : "light";
   if (!state.rid) { D.list = []; D.dots = []; D.byO = new Map(); applyThreshold(); return; }
   if (inner()) return rebuildInner();
@@ -880,23 +915,24 @@ function layers() {
       getLineColor: C.sgg, getLineWidth: 0.6, lineWidthUnits: "pixels", updateTriggers: { getLineColor: D.theme } }));
   }
 
-  // 우세지도 (1km 격자 칠, 확대하면 격자 경계선): 전국 보기면 전 생활권을 유형 색(유입우세·균형·유출우세)으로 — 생활권 층 아래.
-  // 생활권을 고르면 그 생활권 격자마다 gio 로 유입우세·유출우세 (생활권 유입 : 유출 막대는 지도 위 상자) — 마우스를 받게 생활권 층 위
+  // 우세지도 (1km 격자 칠, 확대하면 격자 경계선, 고른 비율 state.dv 의 색 키 domKey): 전국 보기면 전 생활권을 생활권 유형 색으로
+  // — 생활권 층 아래. 생활권을 고르면 그 생활권 격자마다 gio 로 (막대는 지도 위 상자) — 마우스를 받게 생활권 층 위
   const ds = domDs();
   let domL = null;
   if (dom && (state.domAll || sel)) {
     let data, fill;
     if (state.domAll) {
-      const k = RID.map((r) => domLevel(ratio(r, ds)));
+      const k = RID.map((r) => domKey(domLevel(ratio(r, ds, "io"), "io"), domLevel(ratio(r, ds, "ie"), "ie")));
       data = allCells(); fill = (c) => (k[c.r] ? C.dom[k[c.r]] : [0, 0, 0, 0]);
     } else {
       const io = gioOf(sel, ds);
-      data = regionCells(sel); fill = (c) => { const l = gLevel(io.get(c.i)); return l ? C.dom[l] : [0, 0, 0, 0]; };
+      data = regionCells(sel);
+      fill = (c) => { const v = io.get(c.i), k = v && domKey(gLevel(v, "io"), gLevel(v, "ie")); return k ? C.dom[k] : [0, 0, 0, 0]; };
     }
     domL = new deck.PolygonLayer({ id: "dom", data, getPolygon: (c) => c.p, filled: true, stroked: state.zoom >= 8.3, pickable: !state.domAll,
       getLineColor: A(C.panel, 140), getLineWidth: 0.5, lineWidthUnits: "pixels", getFillColor: fill,
       autoHighlight: !state.domAll, highlightColor: A(C.fg, 60),
-      updateTriggers: { getFillColor: [ds, state.yr, D.theme, state.domAll, sel], getLineColor: D.theme } });
+      updateTriggers: { getFillColor: [ds, state.yr, D.theme, state.domAll, sel, state.dv], getLineColor: D.theme } });
     if (state.domAll) out.push(domL);
   }
 
@@ -1061,31 +1097,44 @@ function fitTo(rid) {
     cum += b.share;
   }
   const width = $("map").clientWidth, height = $("map").clientHeight;
-  const vp = new deck.WebMercatorViewport({ width, height }).fitBounds([[x0, y0], [x1, y1]], { padding: Math.min(width, height) * 0.06 });
+  const pad = Math.min(width, height) * 0.06, bar = $("dombar").hidden ? 0 : $("dombar").offsetHeight + 24; // 우세지도 막대 밑으로
+  const vp = new deck.WebMercatorViewport({ width, height }).fitBounds([[x0, y0], [x1, y1]], { padding: { top: Math.max(pad, bar), bottom: pad, left: pad, right: pad } });
   deckgl.setProps({ initialViewState: { longitude: vp.longitude, latitude: vp.latitude, zoom: Math.min(vp.zoom, 9.5), transitionDuration: 600 } });
 }
 
 // ── 패널 ───────────────────────────────────────────────────
-// 우세지도 범례 (전국 보기 3색 / 고른 생활권 유입 : 유출 몫 / 둘 다 아니면 안내)와 전국 보기 버튼
+// 우세지도 범례 (전국 보기 생활권 유형 / 고른 생활권 격자 / 둘 다 아니면 안내)·조작과 지도 위 막대 (고른 비율 state.dv)
+const DV_KEYS = { io: ["in", "eq", "out"], ie: ["int", "eq", "ext"], both: ["in-int", "in-ext", "out-int", "out-ext", "eq"] };
+const DV_NOTE = { io: "유입·유출 = 도착이 중심지인 통근 · 중심지 유출 = 중심지 격자 → 다른 생활권 중심지",
+  ie: "내부 = 생활권 안 (같은 격자 안 포함) · 외부 = 생활권 밖과 오간 통근 · 중심지 = 한쪽 끝이 중심지 격자" };
 function domLegend() {
-  $("lg-dom").hidden = $("dom-btns").hidden = $("cline-l").hidden = state.bm !== "dom";
+  $("lg-dom").hidden = $("dom-btns").hidden = $("cline-l").hidden = $("dv").hidden = state.bm !== "dom";
   $("natl").setAttribute("aria-pressed", state.domAll);
   if (state.bm !== "dom") { $("dombar").hidden = true; return; }
-  const ds = domDs(), one = state.rid && !pm() && !state.domAll, yl = `${ds.toUpperCase()} ${SUM[state.yr].years[ds]}`;
+  const ds = domDs(), one = state.rid && !pm() && !state.domAll, yl = `${ds.toUpperCase()} ${SUM[state.yr].years[ds]}`, dv = state.dv;
+  const ms = dv === "both" ? ["io", "ie"] : [dv], keys = DV_KEYS[dv];
   $("dombar").hidden = !one;
   const row = (k, t) => `<span><span class="lsw" style="background: var(--dom-${k})"></span>${t}</span>`;
-  let head = `우세지도 · 생활권 유입÷유출×100 (${yl})`, body = "<span>전국 보기를 누르거나 생활권을 고르세요</span>";
-  if (state.domAll) body = row("in", "유입우세 105 초과") + row("eq", "균형 95~105") + row("out", "유출우세 95 미만");
-  else if (one) {
-    const n = { in: 0, out: 0, eq: 0 };
-    for (const v of gioOf(state.rid, ds).values()) n[gLevel(v)]++;
-    head = `1km 격자 · 생활권 밖과 오가는 통근 (${yl})`;
-    body = row("in", `유입우세 ${n.in}칸 (밖 → 격자가 많음)`) + row("out", `유출우세 ${n.out}칸 (격자 → 밖이 많음)`) + (n.eq ? row("eq", `같음 ${n.eq}칸`) : "");
-    // 지도 위 막대: 생활권 유입 : 유출 (생활권 유형과 같은 기준 — 중심지 도착만 셈)
-    const s = statById[state.rid], f = fac(ds), x = ratio(state.rid, ds), sh = share(state.rid, ds);
-    $("dombar").innerHTML = `<div><b>${short(rname[ridIdx[state.rid]])}</b> ${typeName(x)} · 유입÷유출 ${rfmt(x)} <small>(${yl})</small></div>
-      <div class="bar"><i style="flex: ${sh}; background: var(--dom-in)"></i><i style="flex: ${1 - sh}; background: var(--dom-out)"></i></div>
-      <div class="lab"><span><b>유입 ${pct(sh)}</b> ${fmt(s[`${ds}_in`] * f)} ${dsUnit(ds)}</span><span><b>유출 ${pct(1 - sh)}</b> ${fmt(s[`${ds}_out`] * f)} ${dsUnit(ds)}</span></div>`;
+  let head = `우세지도 · 생활권 ${ms.map((m) => DV[m].div).join(" · ")}×100 (${yl})`, body = "<span>전국 보기를 누르거나 생활권을 고르세요</span>";
+  if (state.domAll) {
+    const cut = (k) => (dv === "both" ? (k === "eq" ? " (어느 한쪽이라도 95~105)" : "") : k === "eq" ? " 95~105" : k === DV[dv].hi ? " 105 초과" : " 95 미만");
+    body = keys.map((k) => row(k, KEYN[k] + cut(k))).join("");
+  } else if (one) {
+    const n = Object.fromEntries(keys.map((k) => [k, 0]));
+    for (const v of gioOf(state.rid, ds).values()) { const k = domKey(gLevel(v, "io"), gLevel(v, "ie")); if (k) n[k]++; }
+    head = `1km 격자 · ${ms.map((m) => (m === "io" ? "밖 → 격자 vs 격자 → 밖" : "생활권 안 vs 밖과 오간 통근")).join(" × ")} (${yl})`;
+    body = keys.filter((k) => k !== "eq" || n.eq).map((k) => row(k, `${k === "eq" ? "같음" : KEYN[k]} ${n[k]}칸`)).join("");
+    // 지도 위 막대: 비율마다 전체 · 중심지 두 개
+    const f = fac(ds), u = dsUnit(ds);
+    const bar = (m, sc) => {
+      const [a, b] = pairOf(state.rid, ds, m, sc), x = (100 * a) / b, sh = a / (a + b), [la, lb] = DV[m].lab;
+      return `<div class="grp"><div><b>${sc === "c" ? "중심지" : "전체"}</b> ${typeName(x, m)} · ${DV[m].div} ${rfmt(x)}</div>
+        <div class="bar"><i style="flex: ${sh}; background: var(--dom-${DV[m].hi})"></i><i style="flex: ${1 - sh}; background: var(--dom-${DV[m].lo})"></i></div>
+        <div class="lab"><span><b>${la} ${pct(sh)}</b> ${fmt(a * f)} ${u}</span><span><b>${lb} ${pct(1 - sh)}</b> ${fmt(b * f)} ${u}</span></div></div>`;
+    };
+    $("dombar").classList.toggle("two", ms.length > 1);
+    $("dombar").innerHTML = `<div class="hd"><b>${short(rname[ridIdx[state.rid]])}</b> <small>${yl}</small></div>` + ms.map((m) =>
+      `<div class="col"><div class="sec">${DV[m].lab.join(" : ")}</div>${bar(m, "all")}${bar(m, "c")}<small>${DV_NOTE[m]}</small></div>`).join("");
   }
   const cl = state.cline ? `<span><span class="lsw" style="height: 0; border-top: 2px solid var(--fg)"></span>중심지 경계</span>` : "";
   $("lg-dom").innerHTML = `<small>${head}</small>${body}${cl}`;
@@ -1223,13 +1272,15 @@ function getTooltip({ layer, object }) {
   if (layer.id === "detail") return { className: "tip", html: `1km 출발 격자<br>${fmt(object.v)}${cmp() ? "" : ` ${u}`}` };
   if (layer.id === "dom") { // 우세지도에서 고른 생활권의 격자
     const ds = domDs(), v = gioOf(state.rid, ds).get(object.i), f = fac(ds);
-    if (!v) return { className: "tip", html: "1km 격자<br>생활권 밖과 오가는 통근 없음" };
-    return { className: "tip", html: `<b>1km 격자 · ${{ in: "유입우세", out: "유출우세", eq: "같음" }[gLevel(v)]}</b><br>생활권 밖 → 격자 ${fmt(v[0] * f)} · 격자 → 밖 ${fmt(v[1] * f)} ${dsUnit(ds)}` };
+    if (!v) return { className: "tip", html: "1km 격자<br>통근 없음" };
+    const t = (m) => { const l = gLevel(v, m); return l == null ? "밖과 오간 통근 없음" : l === "eq" ? "같음" : KEYN[l]; };
+    return { className: "tip", html: `<b>1km 격자 · ${t("io")} · ${t("ie")}</b><br>생활권 밖 → 격자 ${fmt(v[0] * f)} · 격자 → 밖 ${fmt(v[1] * f)}<br>생활권 안 ${fmt(v[2] * f)} ${dsUnit(ds)}` };
   }
   if (layer.id === "centers") return { className: "tip", html: `중심지 덩어리 · 격자 ${object.properties.n_grid}개<br><small>누르면 이 덩어리로 오는 흐름만</small>` };
   if (layer.id === "regions") {
-    const rid = object.properties.rid, b = D.byR?.get(ridIdx[rid]), x = ratio(rid, domDs());
-    return { className: "tip", html: `<b>${rname[ridIdx[rid]]}</b>${b && state.bm !== "dom" ? `<br>${fmt(b.v)} ${u}` : ""}<br>${typeName(x)} · 유입÷유출 ${rfmt(x)}${cmp() ? " (KT)" : ""}` };
+    const rid = object.properties.rid, b = D.byR?.get(ridIdx[rid]), x = ratio(rid, domDs()), xi = ratio(rid, domDs(), "ie");
+    return { className: "tip", html: `<b>${rname[ridIdx[rid]]}</b>${b && state.bm !== "dom" ? `<br>${fmt(b.v)} ${u}` : ""}<br>${typeName(x)} · 유입÷유출 ${rfmt(x)}${
+      state.bm === "dom" ? `<br>${typeName(xi, "ie")} · 내부÷외부 ${rfmt(xi)}` : ""}${cmp() ? " (KT)" : ""}` };
   }
   return null;
 }
