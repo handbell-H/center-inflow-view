@@ -89,7 +89,17 @@ dialog dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margi
 dialog dt { font-weight: 600; white-space: nowrap; }
 dialog dd { margin: 0; color: var(--muted); }
 dialog form { text-align: right; }
-dialog form button { font: inherit; padding: 6px 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); cursor: pointer; }
+.memo-new { display: grid; gap: 6px; margin: 12px 0; text-align: left; }
+.memo-new div { display: grid; grid-template-columns: 1fr 2fr; gap: 6px; }
+.memo-new input, .memo-new textarea { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); }
+.memo-new button { justify-self: end; }
+.memo-list { list-style: none; margin: 0 0 12px; padding: 0; max-height: 46vh; overflow: auto; border-top: 1px solid var(--line); }
+.memo-list li { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.memo-list li.closed { color: var(--muted); }
+.memo-list .mh { display: flex; gap: 8px; align-items: baseline; }
+.memo-list .mh small { color: var(--muted); margin-right: auto; }
+.memo-list p { margin: 4px 0 0; white-space: pre-wrap; }
+.memo-list button, dialog form button { font: inherit; padding: 6px 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); cursor: pointer; }
 .thr { display: grid; grid-template-columns: 1fr 84px; gap: 8px; align-items: center; }
 .thr input[type=range] { width: 100%; accent-color: var(--ds); }
 .opts { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; font-size: 12px; color: var(--muted); }
@@ -290,8 +300,20 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     <form method="dialog"><button>닫기</button></form>
   </dialog>
 
+  <dialog id="memo-d" aria-labelledby="memo-h">
+    <h2 id="memo-h">수정 요청</h2>
+    <p class="sub">이 사이트 비밀번호를 가진 사람만 보고 씁니다. 처리하면 "처리됨"으로 바꿔 주세요</p>
+    <form id="memo-f" class="memo-new">
+      <div><input id="memo-who" placeholder="작성자" aria-label="작성자" required><input id="memo-where" placeholder="생활권·화면" aria-label="생활권·화면"></div>
+      <textarea id="memo-txt" rows="3" placeholder="수정할 내용" aria-label="수정할 내용" required></textarea>
+      <button type="submit">올리기</button>
+    </form>
+    <ul id="memo-list" class="memo-list"></ul>
+    <form method="dialog"><button>닫기</button></form>
+  </dialog>
+
   <section class="tpanel">
-    <div class="tp-head"><h2 id="tbl-title">상대 생활권</h2><span class="links"><a id="memo" class="link" href="https://docs.google.com/spreadsheets/d/1QFmTFj5FenRbUqC5DJyjicnueis3wM-nw4rNv10zO3A/edit" target="_blank" rel="noopener" title="구글 시트에 수정 요청 적기 (공유받은 사람만 열림). 누르면 지금 화면 정보가 복사돼 &quot;생활권·화면&quot; 칸에 붙여넣을 수 있음">수정 요청</a><button id="src-b" class="link" type="button">데이터 출처</button></span></div>
+    <div class="tp-head"><h2 id="tbl-title">상대 생활권</h2><span class="links"><button id="memo-b" class="link" type="button" hidden title="수정 요청 메모판 (비밀번호를 가진 사람만 보고 씀)">수정 요청</button><button id="src-b" class="link" type="button">데이터 출처</button></span></div>
     <div class="twrap">
       <table>
         <thead id="thead"></thead>
@@ -302,7 +324,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "Po44swBTKxJA4cjfQ1TVyw==", "iter": 600000, "check": "/ObzkWY3Ny34ySa/FWwpCOrmXIT5emHQK8EubRaPumofWXJ+2xFaQiEqz+RFoF8HHDOInQ=="}</script>
+<script>window.__site={"salt": "iXSx6YVzNLvQlsRG7KKL6Q==", "iter": 600000, "check": "yzzHsR8axn5+YOPLeelrTLpK6DSCYaUXlFrTyzNA0axjShqLGlH0KOvP6fiEqsUFrMnPsw=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -424,6 +446,22 @@ function gioOf(rid, ds) {
   return state.gio;
 }
 const KOREA = { longitude: 127.8, latitude: 36.1, zoom: 6.2 };
+// 수정 요청 메모판 — 비밀번호 사이트에서만 (publish.py 가 .memo_token 을 data/memo 로 암호화해 실음). 글 하나 = 비공개 저장소 이슈 하나
+let memo = null;
+const gh = (path, opt = {}) => fetch(`https://api.github.com/repos/${memo.repo}${path}`, { ...opt,
+  headers: { Authorization: `Bearer ${memo.token}`, Accept: "application/vnd.github+json", ...(opt.body ? { "Content-Type": "application/json" } : {}) } })
+  .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`GitHub ${r.status}`))));
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+async function memoList() {
+  const ul = $("memo-list");
+  ul.innerHTML = "<li>불러오는 중…</li>";
+  try {
+    const items = (await gh("/issues?state=all&per_page=100")).filter((i) => !i.pull_request); // 새 글 먼저
+    items.sort((a, b) => (a.state === b.state ? 0 : a.state === "open" ? -1 : 1)); // 대기 → 처리됨
+    ul.innerHTML = items.map((i) => `<li class="${i.state}"><div class="mh"><b>${esc(i.title)}</b><small>${i.created_at.slice(0, 10)} · ${i.state === "open" ? "대기" : "처리됨"}</small>
+      <button type="button" data-n="${i.number}" data-s="${i.state}">${i.state === "open" ? "처리됨으로" : "다시 열기"}</button></div><p>${esc(i.body ?? "")}</p></li>`).join("") || "<li>아직 없음</li>";
+  } catch (err) { ul.innerHTML = `<li>목록을 읽지 못했습니다 (${esc(err.message)}). 이 PC 에서 api.github.com 이 막혔을 수 있습니다</li>`; }
+}
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const rgb = (hex, a = 255) => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255, a]; };
 const A = (c, a) => [c[0], c[1], c[2], a];
@@ -513,6 +551,8 @@ async function init() {
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { rebuild(); draw(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && state.focusO != null) toggleFocus(state.focusO); });
   requestAnimationFrame(loop);
+  // 메모판은 토큰이 실린 비밀번호 사이트에서만 (로컬·단일 파일 버전엔 data/memo 가 없어 버튼이 숨은 채)
+  if (window.__load) window.__load("memo").then((m) => { memo = m; $("memo-b").hidden = false; }, () => {});
 }
 
 function loop(ts) {
@@ -573,12 +613,33 @@ function wire() {
   $("cline").addEventListener("change", (e) => { state.cline = e.target.checked; domLegend(); draw(); });
   $("dom-reset").addEventListener("click", () => domHome(false));
   $("src-b").addEventListener("click", () => $("src-d").showModal());
-  // 수정 요청: 구글 시트(공유받은 사람만 열림)를 새 탭으로 열고, 지금 화면 정보를 복사해 둔다 (시트 "생활권·화면" 칸에 붙여넣기)
-  $("memo").addEventListener("click", () => {
+  // 수정 요청 메모판: 열 때 지금 화면 정보를 채우고 목록을 읽는다
+  $("memo-b").addEventListener("click", () => {
     const ds = cmp() ? "KT·KCB 비교" : `${state.ds.toUpperCase()} ${SUM[state.yr].years[state.ds]}`;
     const where = pm() ? projOf(state.proj).properties.name : state.rid ? rname[ridIdx[state.rid]] : state.domAll ? "전국 보기" : "생활권 안 고름";
     const view = state.bm === "dom" ? `우세지도 ${{ io: "유입·유출", ie: "내부·외부", both: "둘 다" }[state.dv]}` : inner() ? "내부이동" : state.dir === "in" ? "유입" : "유출";
-    navigator.clipboard?.writeText(`${where} · ${view} · ${ds}`).catch(() => {});
+    $("memo-where").value = `${where} · ${view} · ${ds}`;
+    try { $("memo-who").value ||= localStorage.getItem("cif-who") ?? ""; } catch {}
+    $("memo-d").showModal(); memoList();
+  });
+  $("memo-f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const who = $("memo-who").value.trim(), b = e.submitter;
+    try { localStorage.setItem("cif-who", who); } catch {}
+    b.disabled = true;
+    try {
+      await gh("/issues", { method: "POST", body: JSON.stringify({ title: `${$("memo-where").value.trim() || "화면 미지정"} — ${who}`, body: $("memo-txt").value }) });
+      $("memo-txt").value = ""; await memoList();
+    } catch (err) { alert(`올리지 못했습니다: ${err.message}`); }
+    b.disabled = false;
+  });
+  $("memo-list").addEventListener("click", async (e) => { // 처리됨 ↔ 다시 열기 = 이슈 닫기·열기
+    const b = e.target.closest("button[data-n]");
+    if (!b) return;
+    b.disabled = true;
+    try { await gh(`/issues/${b.dataset.n}`, { method: "PATCH", body: JSON.stringify({ state: b.dataset.s === "open" ? "closed" : "open" }) }); }
+    catch (err) { alert(`바꾸지 못했습니다: ${err.message}`); }
+    memoList();
   });
   $("thr-range").addEventListener("input", (e) => { state.thr[tk()] = fromSlider(+e.target.value); syncControls(false); applyThreshold(); draw(); });
   $("thr-num").addEventListener("change", (e) => { state.thr[tk()] = Math.max(0, +e.target.value || 0); syncControls(); applyThreshold(); draw(); });
