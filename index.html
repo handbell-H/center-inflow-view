@@ -239,6 +239,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
         <button id="natl" type="button" title="생활권 선택을 풀고 전국 우세지도 (유입우세·균형·유출우세 3단계)">전국 보기</button>
         <button id="dom-reset" type="button" title="생활권 선택·전국 보기를 풀고 처음 상태로 (전국 줌)">초기화</button>
       </div>
+      <label class="chk" for="cline" id="cline-l" hidden><input id="cline" type="checkbox" checked> 중심지 경계</label>
       <label class="chk" for="anim"><input id="anim" type="checkbox"> 흐름 애니메이션</label>
       <label class="chk" for="proj-on"><input id="proj-on" type="checkbox"> 국토공간대전환 프로젝트</label>
     </div>
@@ -284,7 +285,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "tYAAhKlr8bKt4nQenNMfEg==", "iter": 600000, "check": "OC6olGJq9pOibn+4kOrePNnExs1LyJWsS79dVMbbHydKKrTs+fWyD0fTsJDjNOXySrC3HQ=="}</script>
+<script>window.__site={"salt": "xPQmeF5Wwz6BjSuwqiJ9Ug==", "iter": 600000, "check": "WspGVUOuq4gpdZfwcgh+Pw6rAd/SiVjpiLby2ciZMV58Lz5iPrh1El8dsl/jyEHINputUw=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -346,7 +347,7 @@ const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas";
 const TILES = { light: "World_Light_Gray_Base", dark: "World_Dark_Gray_Base" };
 const ARROW = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><path d='M2 6 L64 32 L2 58 L14 32 Z' fill='#fff'/></svg>");
 const state = { yr: "", projOn: false, proj: null, poff: new Set(), projData: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
-  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "region", domAll: false };
+  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "region", domAll: false, cline: true };
 const fac = (ds = state.ds) => (ds === "kt" ? KT_F : 1);
 const unit = () => (state.ds === "cmp" ? "%" : state.ds === "kt" ? "통행" : "명");
 const short = (n) => n.replace(/생활권$/, "권"); // 서울·광명생활권 → 서울·광명권
@@ -533,6 +534,7 @@ function wire() {
     reset();
   };
   $("natl").addEventListener("click", () => domHome(true));
+  $("cline").addEventListener("change", (e) => { state.cline = e.target.checked; domLegend(); draw(); });
   $("dom-reset").addEventListener("click", () => domHome(false));
   $("src-b").addEventListener("click", () => $("src-d").showModal());
   $("thr-range").addEventListener("input", (e) => { state.thr[tk()] = fromSlider(+e.target.value); syncControls(false); applyThreshold(); draw(); });
@@ -944,7 +946,14 @@ function layers() {
       updateTriggers: { getFillColor: state.proj, getLineWidth: state.proj } }));
   }
 
-  if (dom) return out; // 우세지도는 유입÷유출 현황만 — 화살표·도착점·흐름 이름표 없음
+  if (dom) { // 우세지도는 유입÷유출 현황만 — 화살표·도착점·흐름 이름표 없음. 중심지 덩어리 경계선만 켜고 끔
+    // (생활권을 고르면 그 생활권 중심지만, 아니면 전국. 전국 줌에선 가늘게)
+    const near = state.zoom >= 8.3;
+    if (state.cline) out.push(new deck.GeoJsonLayer({ id: "center-line", data: sel && !state.domAll ? state.centersBy[sel] || [] : centers,
+      filled: false, stroked: true, getLineColor: A(C.fg, near ? 230 : 170), getLineWidth: near ? 1.5 : 0.7, lineWidthUnits: "pixels",
+      updateTriggers: { getLineColor: [D.theme, near], getLineWidth: near } }));
+    return out;
+  }
 
   // 프로젝트 모드: 흐름을 센 1km 도착 격자 (0.1㎢ 이상 겹치는 격자, 없으면 가장 많이 겹치는 격자 하나)
   if (pm()) {
@@ -1059,7 +1068,7 @@ function fitTo(rid) {
 // ── 패널 ───────────────────────────────────────────────────
 // 우세지도 범례 (전국 보기 3색 / 고른 생활권 유입 : 유출 몫 / 둘 다 아니면 안내)와 전국 보기 버튼
 function domLegend() {
-  $("lg-dom").hidden = $("dom-btns").hidden = state.bm !== "dom";
+  $("lg-dom").hidden = $("dom-btns").hidden = $("cline-l").hidden = state.bm !== "dom";
   $("natl").setAttribute("aria-pressed", state.domAll);
   if (state.bm !== "dom") { $("dombar").hidden = true; return; }
   const ds = domDs(), one = state.rid && !pm() && !state.domAll, yl = `${ds.toUpperCase()} ${SUM[state.yr].years[ds]}`;
@@ -1078,7 +1087,8 @@ function domLegend() {
       <div class="bar"><i style="flex: ${sh}; background: var(--dom-in)"></i><i style="flex: ${1 - sh}; background: var(--dom-out)"></i></div>
       <div class="lab"><span><b>유입 ${pct(sh)}</b> ${fmt(s[`${ds}_in`] * f)} ${dsUnit(ds)}</span><span><b>유출 ${pct(1 - sh)}</b> ${fmt(s[`${ds}_out`] * f)} ${dsUnit(ds)}</span></div>`;
   }
-  $("lg-dom").innerHTML = `<small>${head}</small>${body}`;
+  const cl = state.cline ? `<span><span class="lsw" style="height: 0; border-top: 2px solid var(--fg)"></span>중심지 경계</span>` : "";
+  $("lg-dom").innerHTML = `<small>${head}</small>${body}${cl}`;
 }
 
 function renderPanel() {
