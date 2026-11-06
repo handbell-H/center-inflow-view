@@ -80,6 +80,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, li:focus-visibl
 select, input[type=number], input[type=search] { font: 13px var(--font); width: 100%; box-sizing: border-box; padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); }
 input[type=number] { font-family: var(--font); }
 .tp-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.tp-head .links { display: flex; gap: 10px; }
 .link { font: inherit; font-size: 12px; border: 0; padding: 0; white-space: nowrap; background: none; color: var(--fg); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 dialog { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--fg); padding: 20px 22px; width: min(520px, calc(100% - 32px)); box-sizing: border-box; }
 dialog::backdrop { background: rgb(0 0 0 / 0.35); }
@@ -290,7 +291,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </dialog>
 
   <section class="tpanel">
-    <div class="tp-head"><h2 id="tbl-title">상대 생활권</h2><button id="src-b" class="link" type="button">데이터 출처</button></div>
+    <div class="tp-head"><h2 id="tbl-title">상대 생활권</h2><span class="links"><a id="memo" class="link" href="https://docs.google.com/spreadsheets/d/1QFmTFj5FenRbUqC5DJyjicnueis3wM-nw4rNv10zO3A/edit" target="_blank" rel="noopener" title="구글 시트에 수정 요청 적기 (공유받은 사람만 열림). 누르면 지금 화면 정보가 복사돼 &quot;생활권·화면&quot; 칸에 붙여넣을 수 있음">수정 요청</a><button id="src-b" class="link" type="button">데이터 출처</button></span></div>
     <div class="twrap">
       <table>
         <thead id="thead"></thead>
@@ -301,7 +302,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "YpZ+xuMDM2P2mzVwiG4LTg==", "iter": 600000, "check": "Rkw32n91y7bJrJK+xLVqFusqSHqDSTJJxzCDNdBmm5JqmlmRQ4WIHouoznCEF4Kmh9tK7Q=="}</script>
+<script>window.__site={"salt": "Po44swBTKxJA4cjfQ1TVyw==", "iter": 600000, "check": "/ObzkWY3Ny34ySa/FWwpCOrmXIT5emHQK8EubRaPumofWXJ+2xFaQiEqz+RFoF8HHDOInQ=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -572,6 +573,13 @@ function wire() {
   $("cline").addEventListener("change", (e) => { state.cline = e.target.checked; domLegend(); draw(); });
   $("dom-reset").addEventListener("click", () => domHome(false));
   $("src-b").addEventListener("click", () => $("src-d").showModal());
+  // 수정 요청: 구글 시트(공유받은 사람만 열림)를 새 탭으로 열고, 지금 화면 정보를 복사해 둔다 (시트 "생활권·화면" 칸에 붙여넣기)
+  $("memo").addEventListener("click", () => {
+    const ds = cmp() ? "KT·KCB 비교" : `${state.ds.toUpperCase()} ${SUM[state.yr].years[state.ds]}`;
+    const where = pm() ? projOf(state.proj).properties.name : state.rid ? rname[ridIdx[state.rid]] : state.domAll ? "전국 보기" : "생활권 안 고름";
+    const view = state.bm === "dom" ? `우세지도 ${{ io: "유입·유출", ie: "내부·외부", both: "둘 다" }[state.dv]}` : inner() ? "내부이동" : state.dir === "in" ? "유입" : "유출";
+    navigator.clipboard?.writeText(`${where} · ${view} · ${ds}`).catch(() => {});
+  });
   $("thr-range").addEventListener("input", (e) => { state.thr[tk()] = fromSlider(+e.target.value); syncControls(false); applyThreshold(); draw(); });
   $("thr-num").addEventListener("change", (e) => { state.thr[tk()] = Math.max(0, +e.target.value || 0); syncControls(); applyThreshold(); draw(); });
   $("anim").addEventListener("change", (e) => { state.anim = e.target.checked; draw(); });
@@ -1123,7 +1131,7 @@ function domLegend() {
     const n = Object.fromEntries(keys.map((k) => [k, 0]));
     for (const v of gioOf(state.rid, ds).values()) { const k = domKey(gLevel(v, "io"), gLevel(v, "ie")); if (k) n[k]++; }
     head = `1km 격자 · ${ms.map((m) => (m === "io" ? "밖 → 격자 vs 격자 → 밖" : "생활권 안 vs 밖과 오간 통근")).join(" × ")} (${yl})`;
-    body = keys.filter((k) => k !== "eq" || n.eq).map((k) => row(k, `${k === "eq" ? "같음" : KEYN[k]} ${n[k]}칸`)).join("");
+    body = keys.filter((k) => k !== "eq" || n.eq).map((k) => row(k, `${k === "eq" ? "같음" : KEYN[k]} ${n[k].toLocaleString()}격자`)).join("");
     // 지도 위 막대: 비율마다 전체 · 중심지 두 개
     const f = fac(ds), u = dsUnit(ds);
     const bar = (m, sc) => {
