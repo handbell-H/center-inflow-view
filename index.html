@@ -324,7 +324,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "iXSx6YVzNLvQlsRG7KKL6Q==", "iter": 600000, "check": "yzzHsR8axn5+YOPLeelrTLpK6DSCYaUXlFrTyzNA0axjShqLGlH0KOvP6fiEqsUFrMnPsw=="}</script>
+<script>window.__site={"salt": "hcud4kNPoGxqQ0VLVapYrA==", "iter": 600000, "check": "q7Mm6wXig3FBdmQvFyykaudTWMvCLAw5CfaEBTppEnjOrGFrLNDxrc2sKbLQim7+6o9Djw=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -704,7 +704,8 @@ function syncControls(updateRange = true) {
   $("lg-cmp").hidden = !cmp() || dom;
   $("lg-cmp-t").textContent = `KCB 비중 큼 · 비슷 · KT 비중 큼 (${inner() ? "상대 차이" : "±5%p"})`;
   $("lg-c").parentElement.hidden = pm() || dom;
-  $("lg-c").textContent = state.dir === "out" ? "도착 중심지 (마우스 올리면 이름)" : "중심지 (마우스 올리면 이름, 누르면 그 중심지만)";
+  $("lg-c").textContent = state.dir !== "out" ? "중심지 (마우스 올리면 이름, 누르면 그 중심지만)"
+    : state.dmode === "part" ? "도착 중심지 (마우스 올리면 이름)" : "중심지 (마우스 올리면 이름)";
 }
 
 // 국토공간대전환 프로젝트: 유형 색·순서는 원래 대전환 대시보드(국토공간대전환_지도_v2_0715)와 같게
@@ -1027,13 +1028,14 @@ function layers() {
       fontFamily: "KoPubWorld Dotum, Malgun Gothic, sans-serif", fontWeight: 500, updateTriggers: { getColor: D.theme } }));
   }
 
-  // 중심지 (화살표 아래): 유입·내부면 이 생활권 덩어리(눌러서 하나만), 유출이면 화살표가 닿는 상대 생활권 덩어리.
+  // 중심지 (화살표 아래): 이 생활권 덩어리(유입·내부면 눌러서 하나만). 유출 + 중심지별 화살표면 화살표가 닿는 상대 생활권 덩어리도
+  // (유출 + 생활권 중심이면 유입처럼 이 생활권만 — 상대 덩어리를 다 그리면 어지럽다, 11-09 박사님 요청 #2).
   // 내부 모드는 덩어리마다 색 (주변부 점 색과 같음 → 어느 중심지가 어느 주변부와 엮이는지). 우세지도엔 없음
-  const own = sel ? state.centersBy[sel] : [];
-  const cdata = state.dir === "out" ? [...own, ...[...D.byR.keys()].flatMap((r) => state.centersBy[RID[r]] || [])] : own;
+  const own = sel ? state.centersBy[sel] : [], outPart = state.dir === "out" && state.dmode === "part";
+  const cdata = outPart ? [...own, ...[...D.byR.keys()].flatMap((r) => state.centersBy[RID[r]] || [])] : own;
   if (!dom) out.push(new deck.GeoJsonLayer({ id: "centers", data: cdata, pickable: true, filled: true, stroked: true,
     getFillColor: (f) => {
-      if (state.dir === "out") return A(C.fg, f.properties.rid === rid ? 70 : 170);
+      if (outPart) return A(C.fg, f.properties.rid === rid ? 70 : 170);
       const on = state.part == null || f.properties.part === state.part;
       return inner() && !cmp() ? A(partColor(f.properties.part), on ? 200 : 60) : A(C.fg, on ? 170 : 55);
     },
@@ -1111,8 +1113,10 @@ function layers() {
     getColor: (b) => A(b.color, bold(b) ? 255 : dim(b) ? 40 : 240),
     updateTriggers: { getColor: trig, getSize: trig } }));
 
-  // 도착점 표시 (화살 끝이 모이는 덩어리 대표점 또는 생활권 중심)
-  const dests = inner() ? [] : [...new Map(D.shown.map((b) => [b.dst.join(), b.dst])).values()]; // 내부는 점 없음 (주변부 격자마다 찍혀 어지러움)
+  // 점 표시: 화살 끝이 모이는 덩어리 대표점 또는 생활권 중심. 유출 + 생활권 중심이면 유입처럼 이 생활권 중심 한 점만 (화살 시작점)
+  // — 상대 생활권마다 점을 찍으면 어지럽고 도착은 화살촉으로 보인다. 내부는 점 없음 (주변부 격자마다 찍혀 어지러움)
+  const dests = inner() ? [] : state.dir === "out" && !outPart ? D.shown.slice(0, 1).map((b) => b.src)
+    : [...new Map(D.shown.map((b) => [b.dst.join(), b.dst])).values()];
   out.push(new deck.ScatterplotLayer({ id: "dest-pt", data: dests, getPosition: (p) => p, getRadius: 4.5, radiusUnits: "pixels",
     getFillColor: C.fg, stroked: true, getLineColor: C.panel, getLineWidth: 2, lineWidthUnits: "pixels",
     updateTriggers: { getFillColor: D.theme, getLineColor: D.theme } }));
@@ -1122,11 +1126,17 @@ function layers() {
   // 상대 생활권 이름 (합 상위 5곳 + 가리킨·누른 곳, 그 생활권의 가장 큰 화살표에). 유출이면 도착 쪽에 붙임
   const regs = [...D.byR.values()].sort((a, b) => b.v - a.v);
   const named = regs.filter((x, i) => i < 5 || x.r === hb?.r).map((x) => x.top);
+  // 유입은 화살 시작점 위, 유출은 화살 끝 바깥쪽 (화살이 가던 방향으로 비켜 놓아 이름표가 화살촉을 덮지 않게)
+  const dx = (b) => Math.cos((b.angle * Math.PI) / 180), dy = (b) => Math.sin((b.angle * Math.PI) / 180), isIn = state.dir === "in";
   out.push(new deck.TextLayer({ id: "names", data: named, characterSet: "auto", getText: (b) => rname[b.r],
-    getPosition: (b) => state.dir === "in" ? b.src : b.dst, getSize: 12, getColor: C.fg, getPixelOffset: [0, -14], fontWeight: 600,
+    getPosition: (b) => (isIn ? b.src : b.dst), getSize: 12, getColor: C.fg, fontWeight: 600,
+    getPixelOffset: (b) => (isIn ? [0, -14] : [8 * dx(b), -8 * dy(b)]),
+    getTextAnchor: (b) => (isIn ? "middle" : dx(b) > 0.35 ? "start" : dx(b) < -0.35 ? "end" : "middle"),
+    getAlignmentBaseline: (b) => (isIn ? "center" : dy(b) > 0.35 ? "bottom" : dy(b) < -0.35 ? "top" : "center"),
     fontFamily: "KoPubWorld Dotum, Malgun Gothic, sans-serif", background: true, backgroundPadding: [4, 2],
     getBackgroundColor: A(C.panel, 225), getBorderColor: (b) => b.color, getBorderWidth: 1,
-    updateTriggers: { getBackgroundColor: D.theme, getColor: D.theme, getBorderColor: trig, getPosition: trig } }));
+    updateTriggers: { getBackgroundColor: D.theme, getColor: D.theme, getBorderColor: trig, getPosition: trig,
+      getPixelOffset: trig, getTextAnchor: trig, getAlignmentBaseline: trig } }));
   return out;
 }
 
