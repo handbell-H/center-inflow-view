@@ -66,6 +66,10 @@ aside .thr-l { margin-top: 12px; }
 .mapctl .chk { font-size: 12px; }
 .mapctl > .tog { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 5px 8px; cursor: pointer; }
 .mapctl > .tog[aria-pressed="true"] { background: var(--ds); border-color: var(--ds); color: var(--panel); font-weight: 600; }
+/* 지도 왼쪽 위 맨 위: 처음 화면으로 (새로고침). 칩들은 그 아래로 */
+.resetb { font: inherit; font-size: 13px; padding: 6px 14px;
+  background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; box-shadow: 0 1px 3px rgb(0 0 0 / 0.15); }
+.resetb:hover { background: var(--row); }
 /* 지도 왼쪽 아래: 배경(타일·위성)과 행정경계 켜고 끄기 */
 .basectl { position: absolute; left: 12px; bottom: 12px; z-index: 2; user-select: none; display: flex; gap: 6px; padding: 6px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
@@ -152,7 +156,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
 .chip button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
 .empty { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; font-size: 13px; }
 /* 우세지도에서 고른 생활권의 비율 막대 (지도 왼쪽 위, 비율마다 한 단 — 둘 다면 두 단, 좁으면 아래로) */
-.dombar { position: absolute; left: 12px; top: 12px; z-index: 2; user-select: none; box-sizing: border-box; width: min(400px, calc(100% - 256px)); /* 오른쪽 조작 상자와 안 겹치게 */
+.dombar { position: absolute; left: 12px; top: 54px; /* 초기화 버튼 아래 */ z-index: 2; user-select: none; box-sizing: border-box; width: min(400px, calc(100% - 256px)); /* 오른쪽 조작 상자와 안 겹치게 */
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; font-size: 13px;
   display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 14px; }
 .dombar.two { width: min(680px, calc(100% - 256px)); }
@@ -264,7 +268,12 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     <div class="empty" id="empty">생활권을 고르거나, 국토공간대전환 프로젝트를 켜고 폴리곤을 누르세요</div>
     <div class="dombar" id="dombar" hidden></div>
     <div class="mapctl">
-      <button id="cell-b" class="tog" type="button" aria-pressed="false" title="켜고 지도에서 1km 격자를 누르면 그 격자로 오는 통근의 출발 격자를 색으로">격자별 이동 살펴보기</button>
+      <button id="cell-b" class="tog" type="button" aria-pressed="false" title="켜고 지도에서 1km 격자를 누르면 그 격자로 오는 통근을 보여줌">격자별 이동 살펴보기</button>
+      <div class="seg sm" id="cv" role="group" aria-label="격자별 이동 보기" hidden>
+        <button data-cv="line" aria-pressed="true" title="출발 격자 → 고른 격자 화살표 (임계치 이상)">선</button>
+        <button data-cv="cell" aria-pressed="false" title="출발 격자를 통근량 단계 색으로">격자</button>
+        <button data-cv="area" aria-pressed="false" title="가까운 출발 격자부터 통근 50%·80% 가 오는 범위를 매끈한 곡선으로">권역</button>
+      </div>
       <div class="seg sm" role="group" aria-label="지도 보기">
         <button data-bm="flow" aria-pressed="true" title="생활권 사이 통근 흐름 화살표">흐름지도</button>
         <button data-bm="dom" aria-pressed="false" title="생활권·1km 격자의 유입÷유출 · 내부÷외부 우세">우세지도</button>
@@ -279,6 +288,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
         <button data-dv="both" aria-pressed="false" title="두 비율을 한 번에 — 막대 넷, 지도는 2×2 겹침색">둘 다</button>
       </div>
       <label class="chk" for="cline" id="cline-l" hidden><input id="cline" type="checkbox" checked> 중심지 경계</label>
+      <label class="chk" for="ctr-on" id="ctr-l" title="고른 구역의 중심지 덩어리 (국토공간거점지도 중심지Ⅰ·Ⅱ)"><input id="ctr-on" type="checkbox" checked> 중심지(중심지 1 + 2)</label>
       <label class="chk" for="anim"><input id="anim" type="checkbox"> 흐름 애니메이션</label>
       <label class="chk" for="proj-on"><input id="proj-on" type="checkbox"> 국토공간대전환 프로젝트</label>
       <label class="chk" for="hub-on" title="국토공간거점지도 2025 — 1km 격자 중심지 유형 (주변부 제외)"><input id="hub-on" type="checkbox"> 국토공간거점지도</label>
@@ -291,6 +301,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
       <button id="adm" type="button" aria-pressed="false" title="시도(굵게)·시군구 경계선 켜고 끄기">행정경계</button>
     </div>
     <div class="chips">
+      <button class="resetb" id="reset-all" type="button" title="처음 화면으로 (새로고침)">↻ 초기화</button>
       <div class="chip" id="chip-proj" hidden><span id="chip-proj-t"></span><button id="chip-proj-x" type="button">해제</button></div>
       <div class="chip" id="chip-part" hidden><span id="chip-part-t"></span><button id="chip-part-x" type="button">해제</button></div>
       <div class="chip" id="chip-cell" hidden><span id="chip-cell-t"></span><button id="chip-cell-x" type="button">끄기</button></div>
@@ -302,6 +313,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
       <div id="lg-dom" hidden></div>
       <div id="lg-hub" hidden></div>
       <div id="lg-cell" hidden><span class="lsw" id="lg-cell-sw"></span><span>출발 격자별 통근 (적음 → 많음, 로그 단계)</span></div>
+      <div id="lg-area" hidden><span class="lsw" id="lg-area-sw"></span><span>가까운 출발 격자부터 통근 50% (진하게) · 80% 가 오는 범위</span></div>
       <div id="lg-adm" hidden><span class="lsw" style="height: 0; border-top: 2px solid #111; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.55)"></span><span>행정경계 (굵게 시도 · 가늘게 시군구)</span></div>
       <div id="lg-cmp" hidden><span class="lsw" style="background: linear-gradient(90deg, var(--kcb), var(--other), var(--kt))"></span><span id="lg-cmp-t"></span></div>
       <div><svg width="22" height="10" aria-hidden="true"><rect width="22" height="10" rx="2" fill="currentColor" opacity=".7"/></svg><span id="lg-c">중심지 (눌러서 덩어리 선택)</span></div>
@@ -347,7 +359,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "39a988a13c59", "check": "AmmAciQiuV8m1FeQ49jQg0behc1H1wE32cuyWP8tBHA7fVJUzLmV4PH2ACbK+ECJwtRsvA=="}</script>
+<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "39a988a13c59", "check": "bmA+0/jJW/XGrG2MJiTZC9KFMBlhWVtQ2SGmgXo8dscASgU/DT/08BRMYxpS44xW93jMjA=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -425,13 +437,29 @@ async function pickCell(gi) {
   syncControls(); draw();
 }
 
+// 격자별 이동 "권역": 고른 격자에서 가까운 출발 격자부터 통근을 쌓아 share(0.5·0.8) 가 될 때까지의 격자 + 고른 격자의 모서리 →
+// 볼록 껍질 → 모서리 깎기(Chaikin) 6번 = 매끈한 바깥 곡선. 멀리서 한두 명 오는 격자 때문에 범위가 터무니없이 커지지 않게 가까운 순으로 자른다
+function catchment(P, share) {
+  const [x0, y0] = G[P.gi], k = Math.cos((y0 * Math.PI) / 180);
+  const rows = P.rows.map(([o, v]) => [o, v, ((G[o][0] - x0) * k) ** 2 + (G[o][1] - y0) ** 2]).sort((a, b) => a[2] - b[2]);
+  const pts = poly(P.gi).map(([x, y]) => [x * k, y]);
+  for (let i = 0, acc = 0; i < rows.length && acc < share * P.sum; i++) { acc += rows[i][1]; for (const [x, y] of poly(rows[i][0])) pts.push([x * k, y]); }
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], up = [];
+  for (const q of pts) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of pts.reverse()) { while (up.length > 1 && cr(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+  let r = lo.slice(0, -1).concat(up.slice(0, -1));
+  for (let t = 0; t < 6; t++) r = r.flatMap((a, i) => { const b = r[(i + 1) % r.length]; return [[0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]]; });
+  return r.map(([x, y]) => [x / k, y]);
+}
+
 // 국토공간거점지도 유형 색 (거점지도 대시보드 TYPE_HEX 와 같음): 0 중심지Ⅰ · 1 Ⅱ · 2 Ⅲ-1 · 3 Ⅲ-2 · 4 주변부(안 그림)
 const HUB = [["#b63539", "중심지Ⅰ"], ["#f561bd", "중심지Ⅱ"], ["#79aff0", "중심지Ⅲ-1"], ["#feb065", "중심지Ⅲ-2"], ["#c0c0c0", "주변부"]];
 let hubCells = null;
 const baseKind = () => (state.base === "tile" && !state.tilesOK ? "plain" : state.base);
 const ARROW = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><path d='M2 6 L64 32 L2 58 L14 32 Z' fill='#fff'/></svg>");
 const state = { yr: "", projOn: false, proj: null, poff: new Set(), projData: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
-  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "flow", base: "tile", adm: false, tilesOK: false, zoom: 6.2, t: 0, dmode: "region", domAll: false, cline: true, dv: "io", lv: "sg", hub: false };
+  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "flow", base: "tile", adm: false, tilesOK: false, zoom: 6.2, t: 0, dmode: "region", domAll: false, cline: true, dv: "io", lv: "sg", hub: false, ctr: true, cv: "line" };
 const fac = (ds = state.ds) => (ds === "kt" ? KT_F : 1);
 const unit = () => (state.ds === "cmp" ? "%" : state.ds === "kt" ? "통행" : "명");
 const short = (n) => n.replace(/생활권$/, "권"); // 서울·광명생활권 → 서울·광명권
@@ -668,6 +696,7 @@ function wire() {
   });
   const cellMode = (on) => { state.cellMode = on; state.pick = null; syncControls(); draw(); };
   $("cell-b").addEventListener("click", () => cellMode(!state.cellMode));
+  on("cv", (v) => { state.cv = v; syncControls(); draw(); }); // 격자별 이동 보기: 선 / 격자 / 권역
   $("chip-cell-x").addEventListener("click", () => cellMode(false));
   on("dir", (v) => { state.dir = v; state.part = null; reset({ fit: true }); });
   // 외부이동(유입·유출) / 내부이동. 외부로 돌아가면 보던 방향
@@ -710,12 +739,15 @@ function wire() {
     if (was) { const [x, y] = state.anchor ?? [was.cx, was.cy]; state.rid = null; await select(RID[Z[nearestGrid(x, y)] >> 1], true); syncControls(); renderList(); return; }
     reset();
   });
+  $("ctr-on").addEventListener("change", (e) => { state.ctr = e.target.checked; syncControls(); draw(); });
   $("hub-on").addEventListener("change", async (e) => { state.hub = e.target.checked; if (state.hub) GT ??= await load("gtype"); syncControls(); draw(); });
   on("base", async (v) => { state.base = v; if (baseKind() === "plain") await ensureVec(); syncControls(); draw(); });
   $("adm").addEventListener("click", async () => { state.adm = !state.adm; if (state.adm) await ensureVec(); syncControls(); draw(); });
   $("cline").addEventListener("change", (e) => { state.cline = e.target.checked; domLegend(); draw(); });
   $("dom-reset").addEventListener("click", () => domHome(false));
   $("src-b").addEventListener("click", () => $("src-d").showModal());
+  // 초기화 (지도 가운데 아래): 주소의 구역(#…)을 지우고 다시 읽는다 — 비밀번호는 탭에 기억돼 다시 묻지 않음
+  $("reset-all").addEventListener("click", () => { history.replaceState(null, "", location.pathname); location.reload(); });
   // 수정 요청 메모판: 열 때 지금 화면 정보를 채우고 목록을 읽는다
   $("memo-b").addEventListener("click", () => {
     const ds = cmp() ? "KT·KCB 비교" : `${state.ds.toUpperCase()} ${SUM[state.yr].years[state.ds]}`;
@@ -801,12 +833,15 @@ function syncControls(updateRange = true) {
   $("chip-cell-t").textContent = !P ? "격자별 이동 — 지도에서 1km 격자를 누르세요"
     : !P.rows.length ? `고른 격자 (${rname[Z[P.gi] >> 1]}) — 다른 격자에서 오는 통근 없음 (같은 격자 안 제외)`
     : `고른 격자 (${rname[Z[P.gi] >> 1]}) 로 오는 통근 ${fmt(P.sum * kf)} 통행 · 출발 격자 ${P.rows.length.toLocaleString()}개 (화살표 ${P.arrows.filter((d) => d.v >= state.thr.ckt).length.toLocaleString()}) · 같은 ${U()} 안 ${P.sum ? pct(P.inner / P.sum) : "–"}`;
-  $("lg-cell").hidden = !(state.cellMode && P);
+  $("cv").hidden = !state.cellMode;
+  $("lg-cell").hidden = !(state.cellMode && P && state.cv === "cell");
+  $("lg-area").hidden = !(state.cellMode && P && state.cv === "area");
+  $("lg-area-sw").style.cssText = `background: ${CELL_RAMP[4]}55; border: 2px solid ${CELL_RAMP[4]}`;
   $("lg-cell-sw").style.background = `linear-gradient(90deg, ${(isDark() ? [...CELL_RAMP].reverse() : CELL_RAMP).join(", ")})`;
   $("lg-hub").hidden = !state.hub;
   $("lg-hub").innerHTML = "<small>국토공간거점지도 2025 (1km 격자)</small>" + HUB.slice(0, 4).map(([c, n]) => `<span><span class="lsw" style="background: ${c}"></span>${n}</span>`).join("");
   domLegend();
-  for (const [attr, key] of [["yr", "yr"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"], ["base", "base"], ["dv", "dv"], ["lv", "lv"]])
+  for (const [attr, key] of [["yr", "yr"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"], ["base", "base"], ["dv", "dv"], ["lv", "lv"], ["cv", "cv"]])
     document.querySelectorAll(`[data-${attr}]`).forEach((x) => x.setAttribute("aria-pressed", x.dataset[attr] === state[key]));
   $("base-tile").title = state.tilesOK ? "Esri 회색 지도" : "이 환경에서는 외부 지도 타일을 불러올 수 없어 땅 색만 칠합니다";
   document.querySelectorAll("[data-mv]").forEach((x) => x.setAttribute("aria-pressed", (x.dataset.mv === "int") === inner()));
@@ -820,10 +855,12 @@ function syncControls(updateRange = true) {
   $("lg-a").textContent = state.cellMode && state.pick ? "굵기 = 출발 격자 → 고른 격자 통근량" : !inner() ? (cmp() ? "굵기 = KT·KCB 평균 비중" : `굵기 = ${pm() ? "도착" : state.dir === "in" ? "유입" : "유출"}량 · 색 = ${rel} ${U()}`)
     : `굵기 = ${size}${cmp() ? "" : { pc: " · 색 = 도착 중심지", cp: " · 색 = 출발 중심지", cc: " · 색 = 출발 중심지", pp: "" }[state.kind]}`;
   const dom = state.bm === "dom"; // 우세지도엔 화살표·중심지가 없으니 그 범례도 숨김
-  $("lg-a").parentElement.hidden = dom;
+  $("lg-a").parentElement.hidden = dom || !!(state.cellMode && state.pick && state.cv !== "line"); // 격자별 이동의 격자·권역 보기엔 화살표가 없다
   $("lg-cmp").hidden = !cmp() || dom;
   $("lg-cmp-t").textContent = `KCB 비중 큼 · 비슷 · KT 비중 큼 (${inner() ? "상대 차이" : "±5%p"})`;
-  $("lg-c").parentElement.hidden = pm() || dom || !!state.cellMode;
+  $("lg-c").parentElement.hidden = pm() || dom || !!state.cellMode || !state.ctr;
+  $("ctr-l").hidden = dom; // 우세지도엔 따로 "중심지 경계"
+  $("ctr-on").checked = state.ctr;
   $("lg-c").textContent = state.dir !== "out" ? "중심지 (마우스 올리면 이름, 누르면 그 중심지만)"
     : state.dmode === "part" ? "도착 중심지 (마우스 올리면 이름)" : "중심지 (마우스 올리면 이름)";
 }
@@ -1160,7 +1197,7 @@ function layers() {
   // 내부 모드는 덩어리마다 색 (주변부 점 색과 같음 → 어느 중심지가 어느 주변부와 엮이는지). 우세지도엔 없음
   const own = sel ? state.centersBy[sel] : [], outPart = state.dir === "out" && state.dmode === "part";
   const cdata = outPart ? [...own, ...[...D.byR.keys()].flatMap((r) => state.centersBy[RID[r]] || [])] : own;
-  if (!dom) out.push(new deck.GeoJsonLayer({ id: "centers", data: cdata, pickable: true, filled: true, stroked: true,
+  if (!dom && state.ctr) out.push(new deck.GeoJsonLayer({ id: "centers", data: cdata, pickable: true, filled: true, stroked: true,
     getFillColor: (f) => {
       if (outPart) return A(C.fg, f.properties.rid === rid ? 70 : 170);
       const on = state.part == null || f.properties.part === state.part;
@@ -1187,15 +1224,22 @@ function layers() {
       updateTriggers: { getFillColor: state.proj, getLineWidth: state.proj } }));
   }
 
-  // 격자별 이동 살펴보기: 고른 격자로 오는 통근의 출발 격자 (로그 6단계 파랑) + 고른 격자 굵은 테두리. 켜 있으면 화살표는 안 그림
+  // 격자별 이동 살펴보기 (켜 있으면 구역 화살표는 안 그림) — 보기 방식 state.cv:
+  //  선 = 출발 격자 → 고른 격자 화살표 (임계치 이상, 굵기 = 양), 격자 = 출발 격자를 로그 6단계 파랑, 권역 = 통근 50%·80% 가 오는 매끈한 범위
   if (state.cellMode && state.pick) {
     const P = state.pick, ramp = (D.theme === "dark" ? [...CELL_RAMP].reverse() : CELL_RAMP).map((c) => rgb(c, 230)), lm = Math.log1p(P.max);
-    out.push(new deck.PolygonLayer({ id: "pick-from", data: P.rows, pickable: true, getPolygon: (r) => poly(r[0]), filled: true, stroked: false,
+    if (state.cv === "cell") out.push(new deck.PolygonLayer({ id: "pick-from", data: P.rows, pickable: true, getPolygon: (r) => poly(r[0]), filled: true, stroked: false,
       getFillColor: (r) => ramp[Math.min(5, Math.floor((6 * Math.log1p(r[1])) / lm))], updateTriggers: { getFillColor: [P.gi, D.theme, state.yr] } }));
+    if (state.cv === "area" && P.rows.length) {
+      P.areas ??= [0.8, 0.5].map((sh) => ({ sh, ring: catchment(P, sh) }));
+      const c = rgb(CELL_RAMP[4]);
+      out.push(new deck.PolygonLayer({ id: "pick-area", data: P.areas, getPolygon: (a) => a.ring, filled: true, stroked: true,
+        getFillColor: (a) => A(c, a.sh === 0.5 ? 70 : 40), getLineColor: A(c, 235), getLineWidth: (a) => (a.sh === 0.5 ? 2.5 : 2), lineWidthUnits: "pixels",
+        updateTriggers: { getFillColor: P.gi, getLineWidth: P.gi } }));
+    }
     out.push(new deck.PolygonLayer({ id: "pick-cell", data: [P.gi], getPolygon: (g) => poly(g), filled: false, stroked: true,
       getLineColor: C.fg, getLineWidth: 3, lineWidthUnits: "pixels", updateTriggers: { getLineColor: D.theme } }));
-    // 출발 격자 → 고른 격자 화살표 (임계치 이상, 굵기 = 양)
-    const t = state.thr.ckt, vmax = P.max * fac("kt"), aw = (v) => 0.6 + 6 * Math.sqrt(v / vmax), shown = P.arrows.filter((d) => d.v >= t);
+    const t = state.thr.ckt, vmax = P.max * fac("kt"), aw = (v) => 0.6 + 6 * Math.sqrt(v / vmax), shown = state.cv === "line" ? P.arrows.filter((d) => d.v >= t) : [];
     out.push(new deck.PathLayer({ id: "pick-arrows", data: shown, pickable: true, getPath: (d) => d.path, getColor: A(C.fg, 160), getWidth: (d) => aw(d.v),
       widthUnits: "pixels", capRounded: true, jointRounded: true, updateTriggers: { getColor: D.theme, getWidth: [P.gi, t] } }));
     out.push(new deck.IconLayer({ id: "pick-heads", data: shown, iconAtlas: ARROW,
