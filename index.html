@@ -347,7 +347,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "39a988a13c59", "check": "U7AlWMxQx/OEkaa/Zt55Og9Q+DqVbi+l5bumBOJixjjRc+bBhdy20Z9kkI4SeGGmE02d1w=="}</script>
+<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "39a988a13c59", "check": "suFcTPWeVPcFXy+Kcoxpf3tOHaOqs5Ch2XA+K82XijYly13T5ukTRtJc68zQDYix45Dr0g=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -572,6 +572,15 @@ async function useLevel(lv) {
     p.rz = RID[+Object.keys(n).reduce((a, b) => (n[b] > n[a] ? b : a))];
   }
 }
+// 지도 클릭 (위 pointerup 에서): info = 집힌 것(없으면 null), at = 누른 경위도
+function mapClick(info, at) {
+  if (state.cellMode) { const gi = nearestGrid(at[0], at[1], 0.75); if (gi >= 0) pickCell(gi); return; } // 격자별 이동
+  const id = info?.layer?.id;
+  if (id === "arrows" || id === "heads") toggleFocus(info.object.o);
+  else if (id === "projects") selectProj(info.object.properties.id);
+  else if (id === "centers") { if (state.dir !== "out" && !pm()) togglePart(info.object.properties.part); }
+  else if (id === "regions") select(info.object.properties.rid);
+}
 // 경위도에서 가장 가까운 1km 격자 idx (구역 기준을 바꿀 때 보던 자리를 이어 가려고)
 const nearestGrid = (lon, lat, km = Infinity) => { // km 안에 없으면 -1
   const k = Math.cos((lat * Math.PI) / 180);
@@ -609,14 +618,16 @@ async function init() {
       state.zoom = viewState.zoom;
       if (crossed && !state.anim) draw();
     },
-    onClick: (info) => {
-      if (state.cellMode) { const gi = info.coordinate && nearestGrid(...info.coordinate, 0.75); if (gi >= 0) pickCell(gi); return; } // 격자별 이동
-      const id = info.layer?.id;
-      if (id === "arrows" || id === "heads") toggleFocus(info.object.o);
-      else if (id === "projects") selectProj(info.object.properties.id);
-      else if (id === "centers") { if (state.dir !== "out" && !pm()) togglePart(info.object.properties.part); }
-      else if (id === "regions") select(info.object.properties.rid);
-    },
+  });
+  // 지도 클릭은 deck 의 onClick 대신 직접 받는다: deck 은 누르고 떼는 사이가 짧아야 클릭으로 치는데, 화면 그리기가 바쁜 PC 에선 그 사이가
+  // 길어져 클릭이 자주 빠졌다 (11-16 확인). 거의 안 움직이고 뗐으면 클릭 → 그 자리를 집어(pickObject) 같은 일을 한다
+  let down = null;
+  $("deck").addEventListener("pointerdown", (e) => { down = e.button === 0 ? [e.clientX, e.clientY] : null; });
+  $("deck").addEventListener("pointerup", (e) => {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+    down = null;
+    const r = $("deck").getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    mapClick(deckgl.pickObject({ x, y, radius: 2 }), deckgl.getViewports()[0].unproject([x, y]));
   });
   wire();
   syncControls();
@@ -696,7 +707,7 @@ function wire() {
     state.focusO = state.hoverO = state.part = null;
     if (state.pick) pickCell(state.pick.gi); // 격자별 이동의 "같은 구역 안" 비율도 새 기준으로
     if (proj != null) { state.proj = null; await selectProj(proj); return; }
-    if (was) { state.rid = null; await select(RID[Z[nearestGrid(was.cx, was.cy)] >> 1]); syncControls(); renderList(); return; }
+    if (was) { const [x, y] = state.anchor ?? [was.cx, was.cy]; state.rid = null; await select(RID[Z[nearestGrid(x, y)] >> 1], true); syncControls(); renderList(); return; }
     reset();
   });
   $("hub-on").addEventListener("change", async (e) => { state.hub = e.target.checked; if (state.hub) GT ??= await load("gtype"); syncControls(); draw(); });
@@ -788,6 +799,7 @@ function syncControls(updateRange = true) {
   $("cell-b").setAttribute("aria-pressed", !!state.cellMode);
   $("chip-cell").hidden = !state.cellMode;
   $("chip-cell-t").textContent = !P ? "격자별 이동 — 지도에서 1km 격자를 누르세요"
+    : !P.rows.length ? `고른 격자 (${rname[Z[P.gi] >> 1]}) — 다른 격자에서 오는 통근 없음 (같은 격자 안 제외)`
     : `고른 격자 (${rname[Z[P.gi] >> 1]}) 로 오는 통근 ${fmt(P.sum * kf)} 통행 · 출발 격자 ${P.rows.length.toLocaleString()}개 (화살표 ${P.arrows.filter((d) => d.v >= state.thr.ckt).length.toLocaleString()}) · 같은 ${U()} 안 ${P.sum ? pct(P.inner / P.sum) : "–"}`;
   $("lg-cell").hidden = !(state.cellMode && P);
   $("lg-cell-sw").style.background = `linear-gradient(90deg, ${(isDark() ? [...CELL_RAMP].reverse() : CELL_RAMP).join(", ")})`;
@@ -865,8 +877,10 @@ function renderList() {
   });
 }
 
-async function select(rid) {
+// keep = 구역 기준을 바꿔 이어 여는 것 (그땐 처음 고른 자리 state.anchor 를 그대로 둬서, 기준을 오가도 같은 곳으로 돌아온다)
+async function select(rid, keep = false) {
   if (rid === state.rid && !pm()) return;
+  if (!keep) state.anchor = [regionBy[rid].properties.cx, regionBy[rid].properties.cy];
   if (pm()) { state.proj = null; state.projData = { ...projects, features: projects.features.filter(({ properties: p }) => !state.poff.has(p.ktype)) }; syncControls(); }
   state.rid = rid; state.focusO = null; state.hoverO = null; state.part = null; state.domAll = false;
   history.replaceState(null, "", `#${state.lv}-r${rid.slice(-3)}`);
