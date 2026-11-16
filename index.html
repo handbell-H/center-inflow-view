@@ -347,7 +347,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "39a988a13c59", "check": "suFcTPWeVPcFXy+Kcoxpf3tOHaOqs5Ch2XA+K82XijYly13T5ukTRtJc68zQDYix45Dr0g=="}</script>
+<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "39a988a13c59", "check": "AmmAciQiuV8m1FeQ49jQg0behc1H1wE32cuyWP8tBHA7fVJUzLmV4PH2ACbK+ECJwtRsvA=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -1493,7 +1493,7 @@ function getTooltip({ layer, object }) {
     return { className: "tip", html: `<b>${p.name}</b><br><span class="sw" style="background:${pcolor(p.ktype)}"></span> ${p.ktype} · ${p.region}<br>${p.addr ?? ""}<br>면적 ${p.area_txt ?? `${p.area}㎢`}${p.note ? `<br><small>${p.note}</small>` : ""}` };
   }
   if (layer.id === "centers") {
-    const p = object.properties, hint = state.dir === "out" ? "" : "<br><small>누르면 이 중심지 흐름만</small>";
+    const p = object.properties, hint = state.dir === "out" || state.cellMode ? "" : "<br><small>누르면 이 중심지 흐름만</small>"; // 격자별 이동 중엔 누르면 격자를 고름
     return { className: "tip", html: `<b>${rname[ridIdx[p.rid]]} 중심${p.no}</b><br>격자 ${p.n_grid}개${hint}` };
   }
   if (layer.id === "arrows" || layer.id === "heads") {
