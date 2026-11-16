@@ -57,17 +57,22 @@ h2 { font-size: 18px; font-weight: 700; margin: 0; text-wrap: balance; }
 .seg button:disabled { color: var(--muted); cursor: not-allowed; }
 .seg.sm button { padding: 5px 4px; font-size: 12px; }
 #yr { margin-top: 6px; }
-#cmp-l { margin-top: 8px; }
+.dsrc { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.dsrc small { font-weight: 400; color: var(--muted); font-size: 11px; margin-left: 4px; }
 aside > section { border-top: 1px solid var(--line); padding-top: 12px; }
 aside .thr-l { margin-top: 12px; }
 .mapctl { position: absolute; right: 12px; top: 12px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
   padding: 8px 10px; display: grid; gap: 7px; width: 196px; }
 .mapctl .chk { font-size: 12px; }
+.mapctl > .tog { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 5px 8px; cursor: pointer; }
+.mapctl > .tog[aria-pressed="true"] { background: var(--ds); border-color: var(--ds); color: var(--panel); font-weight: 600; }
 /* 지도 왼쪽 아래: 배경(타일·위성)과 행정경계 켜고 끄기 */
 .basectl { position: absolute; left: 12px; bottom: 12px; z-index: 2; user-select: none; display: flex; gap: 6px; padding: 6px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
 .basectl .seg { width: 108px; }
 .basectl > button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+#lg-hub { display: grid; gap: 3px; }
+#lg-hub > span { display: flex; align-items: center; gap: 8px; }
 .basectl > button[aria-pressed="true"] { background: var(--ds); border-color: var(--ds); color: var(--panel); font-weight: 600; }
 .mapctl .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .mapctl .btns button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 5px 8px; cursor: pointer; }
@@ -194,16 +199,17 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     </section>
 
     <section>
+      <h3 class="label">구역 기준</h3>
+      <div class="seg sm" id="lvs" role="group" aria-label="구역 기준"></div>
+    </section>
+
+    <section>
       <h3 class="label">데이터</h3>
-      <div class="seg" role="group" aria-label="OD 데이터">
-        <button data-ds="kt" aria-pressed="true" title="국가교통DB 통행 OD 출근 · 화·수·목 07~09시 직장 도착 · 하루 평균">KT<small>통근 07~09시 평균</small></button>
-        <button data-ds="kcb" aria-pressed="false" title="KCB 통근 OD · 직업 전체·연령 합 · 1~2명 마스킹은 1명">KCB<small>명</small></button>
-      </div>
+      <p class="dsrc" title="국가교통DB 통행 OD 출근 · 화·수·목 07~09시 직장 도착 · 하루 평균">KT 출근 통행 <small>07~09시 하루 평균</small></p>
       <div class="seg sm" id="yr" role="group" aria-label="연도" title="생활권·중심지는 두 연도 모두 2025 그대로">
         <button data-yr="prev" aria-pressed="false"></button>
         <button data-yr="" aria-pressed="true"></button>
       </div>
-      <label class="chk" for="cmp-on" id="cmp-l" title="상대 생활권별 비중(%)을 KT와 KCB로 비교"><input id="cmp-on" type="checkbox"> KT·KCB 비교 (비중 %)</label>
     </section>
 
     <section>
@@ -246,9 +252,9 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     </section>
 
     <section class="list">
-      <h3 class="label">생활권</h3>
-      <input id="q" type="search" placeholder="생활권 검색" aria-label="생활권 검색">
-      <div class="lhead"><span>생활권</span><span id="lh-v"></span></div>
+      <h3 class="label" id="list-h">생활권</h3>
+      <input id="q" type="search" placeholder="생활권 검색" aria-label="구역 검색">
+      <div class="lhead"><span id="lh-u">생활권</span><span id="lh-v"></span></div>
       <ul id="regions" role="listbox" aria-label="생활권"></ul>
     </section>
   </aside>
@@ -258,6 +264,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     <div class="empty" id="empty">생활권을 고르거나, 국토공간대전환 프로젝트를 켜고 폴리곤을 누르세요</div>
     <div class="dombar" id="dombar" hidden></div>
     <div class="mapctl">
+      <button id="cell-b" class="tog" type="button" aria-pressed="false" title="켜고 지도에서 1km 격자를 누르면 그 격자로 오는 통근의 출발 격자를 색으로">격자별 이동 살펴보기</button>
       <div class="seg sm" role="group" aria-label="지도 보기">
         <button data-bm="flow" aria-pressed="true" title="생활권 사이 통근 흐름 화살표">흐름지도</button>
         <button data-bm="dom" aria-pressed="false" title="생활권·1km 격자의 유입÷유출 · 내부÷외부 우세">우세지도</button>
@@ -274,6 +281,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
       <label class="chk" for="cline" id="cline-l" hidden><input id="cline" type="checkbox" checked> 중심지 경계</label>
       <label class="chk" for="anim"><input id="anim" type="checkbox"> 흐름 애니메이션</label>
       <label class="chk" for="proj-on"><input id="proj-on" type="checkbox"> 국토공간대전환 프로젝트</label>
+      <label class="chk" for="hub-on" title="국토공간거점지도 2025 — 1km 격자 중심지 유형 (주변부 제외)"><input id="hub-on" type="checkbox"> 국토공간거점지도</label>
     </div>
     <div class="basectl">
       <div class="seg sm" role="group" aria-label="배경">
@@ -285,12 +293,15 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     <div class="chips">
       <div class="chip" id="chip-proj" hidden><span id="chip-proj-t"></span><button id="chip-proj-x" type="button">해제</button></div>
       <div class="chip" id="chip-part" hidden><span id="chip-part-t"></span><button id="chip-part-x" type="button">해제</button></div>
+      <div class="chip" id="chip-cell" hidden><span id="chip-cell-t"></span><button id="chip-cell-x" type="button">끄기</button></div>
       <div class="chip" id="chip" hidden><span id="chip-text"></span><button id="chip-x" type="button">해제</button></div>
     </div>
     <div class="legend">
       <div><svg width="22" height="10" aria-hidden="true"><path d="M1 5 H15" stroke="currentColor" stroke-width="3" opacity=".5"/><path d="M14 1 L21 5 L14 9 Z" fill="currentColor"/></svg><span id="lg-a"></span></div>
       <div id="lg-proj" hidden></div>
       <div id="lg-dom" hidden></div>
+      <div id="lg-hub" hidden></div>
+      <div id="lg-cell" hidden><span class="lsw" id="lg-cell-sw"></span><span>출발 격자별 통근 (적음 → 많음, 로그 단계)</span></div>
       <div id="lg-adm" hidden><span class="lsw" style="height: 0; border-top: 2px solid #111; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.55)"></span><span>행정경계 (굵게 시도 · 가늘게 시군구)</span></div>
       <div id="lg-cmp" hidden><span class="lsw" style="background: linear-gradient(90deg, var(--kcb), var(--other), var(--kt))"></span><span id="lg-cmp-t"></span></div>
       <div><svg width="22" height="10" aria-hidden="true"><rect width="22" height="10" rx="2" fill="currentColor" opacity=".7"/></svg><span id="lg-c">중심지 (눌러서 덩어리 선택)</span></div>
@@ -304,7 +315,6 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     <p class="sub">국토교통부 (국토공간거점지도, 국가교통DB)</p>
     <dl>
       <dt>KT 통행 OD</dt><dd>국가교통DB 통신 기반 통행 OD 2024·2025 출근 — 화·수·목 07~09시(2시간)에 직장에 도착한 통행. 관측기간(2024 28일, 2025 30일) 중 화·수·목 12일. 값은 하루 07~09시 평균 통행(12일 합계 ÷ 12).</dd>
-      <dt>KCB 통근 OD</dt><dd>2021·2025 (각 12월 기준) 자택 → 직장 1km 격자 OD. 직업 전체·연령 합, 1~2명으로 가려진 칸은 1명.</dd>
       <dt>중심지</dt><dd>국토공간거점지도 2025 중심지Ⅰ(거점·도심)·Ⅱ(준거점·부심) 1km 격자. 생활권마다 8방향으로 이어진 격자를 한 덩어리로 묶고, 격자 수가 큰 순서로 번호를 붙임.</dd>
       <dt>생활권</dt><dd>2025 출근 통행 기반 생활권, 목표 자족도 75% (92개). 화살표가 이어지는 '생활권 중심'은 생활권 경계의 무게중심 (경계 밖이거나 가장자리에 가까우면 경계 안쪽으로 옮긴 점). 같은 1km 격자 안 통행은 제외. 이전 연도 OD도 2025 생활권·중심지로 집계해 연도끼리 비교할 수 있음.</dd>
       <dt>국토공간대전환 프로젝트</dt><dd>86곳 폴리곤 (국토공간대전환 지도 0715본). 폴리곤을 누르면 그 프로젝트로 오는 통근만: 폴리곤과 0.1㎢(격자의 10%) 이상 겹치는 1km 격자에 도착한 통행, 그런 격자가 없으면 가장 많이 겹치는 격자 하나. 같은 격자 안 통행은 제외.</dd>
@@ -337,7 +347,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "FH7+ZYOGi1ZHmNm4JGUMfA==", "iter": 600000, "check": "LuORZOJms2kmPy642R+ghxTb1xcN63qsIYCSoqBvWfxBUH4nd1bPN8c6tM3Cb7eU/6NguQ=="}</script>
+<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "39a988a13c59", "check": "U7AlWMxQx/OEkaa/Zt55Og9Q+DqVbi+l5bumBOJixjjRc+bBhdy20Z9kkI4SeGGmE02d1w=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -366,7 +376,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   };
   const tryPw = async (pw) => { const key = await derive(pw); await open(key, b64(S.check).buffer); return key; };
   window.__load = async (k) => {
-    const key = await keyP, r = await fetch(`data/${k}.bin?v=${encodeURIComponent(S.salt)}`); // 게시마다 salt 가 바뀌어 옛 캐시를 안 씀
+    const key = await keyP, r = await fetch(`data/${k}.bin?v=${encodeURIComponent(S.ver)}`); // 데이터가 바뀌면 ver 가 바뀌어 옛 캐시를 안 씀
     if (!r.ok) throw new Error(`data/${k}.bin 를 읽지 못했습니다 (${r.status})`);
     return JSON.parse(await open(key, await r.arrayBuffer()));
   };
@@ -388,7 +398,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
 const KT_F = 2;
 // 임계치: 유입·유출은 생활권 묶음 값, 내부(i*)는 1km 격자 점·덩어리 사이 화살표 값, 프로젝트(p*)는 출발 생활권 묶음 값
 // g* = 선을 눌러 1km 격자 화살표를 볼 때 그 격자 화살표에 거는 임계치 (비교면 그 묶음 안 비중 %)
-const DEFAULT_THR = { kt: 10, kcb: 100, cmp: 1, ikt: 1, ikcb: 5, icmp: 0.1, gkt: 0.5, gkcb: 1, gcmp: 0.5, pkt: 1, pkcb: 5, pcmp: 1 };
+const DEFAULT_THR = { ckt: 1, kt: 10, kcb: 100, cmp: 1, ikt: 1, ikcb: 5, icmp: 0.1, gkt: 0.5, gkcb: 1, gcmp: 0.5, pkt: 1, pkcb: 5, pcmp: 1 };
 const KINDS = { pc: "주변부 → 중심지", cp: "중심지 → 주변부", ccx: "중심지 ↔ 중심지 (덩어리 사이)", ccs: "같은 덩어리 안", pp: "주변부 ↔ 주변부" };
 // 범주 8색 (dataviz 기본 팔레트, 라이트/다크 각각 검증된 단계)
 const CAT = {
@@ -400,25 +410,47 @@ const TILES = { light: "World_Light_Gray_Base", dark: "World_Dark_Gray_Base" };
 // 브이월드 WMTS (국토교통부 공간정보 오픈플랫폼). 인증키는 브라우저용(사이트 도메인 등록)이라 공개 코드에 있어도 된다
 const VWORLD = "https://api.vworld.kr/req/wmts/1.0.0/2FD0FCF6-DD85-4C04-8B40-73DFC71879FF";
 // 배경: 타일(Esri) / 위성(브이월드). 타일을 못 불러오는 곳에선 "타일"이 땅 색만 칠한 기본 배경
+// 격자별 이동 살펴보기: 버튼을 켜고 지도에서 1km 격자를 누르면 그 격자로 오는 통근(KT, 같은 격자 안 제외)의 출발 격자를 색으로.
+// 데이터 = <연도>/gin/sNNN (도착 격자가 속한 시군마다) {도착 격자: [[출발 격자, 값], …]}, gin/where = 격자 → 파일 번호
+const CELL_RAMP = ["#b7d3f6", "#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281"]; // 파랑 순차 6단계 (다크는 거꾸로)
+let GW = null;
+const GIN = {};
+async function pickCell(gi) {
+  GW ??= await load("gin/where");
+  const key = `${state.yr && state.yr + "/"}gin/s${String(GW[gi]).padStart(3, "0")}`;
+  const rows = (GIN[key] ??= await load(key))[gi] ?? [];
+  const kf = fac("kt"), arrows = rows.map(([o, v]) => { const path = curve(G[o], G[gi]); return { o, v: v * kf, path, angle: heading(path[39], path[40]) }; }).reverse(); // 큰 흐름이 위
+  state.pick = { gi, rows, arrows, max: rows.length ? rows[0][1] : 1, sum: rows.reduce((a, r) => a + r[1], 0),
+    inner: rows.reduce((a, r) => a + ((Z[r[0]] >> 1) === (Z[gi] >> 1) ? r[1] : 0), 0) };
+  syncControls(); draw();
+}
+
+// 국토공간거점지도 유형 색 (거점지도 대시보드 TYPE_HEX 와 같음): 0 중심지Ⅰ · 1 Ⅱ · 2 Ⅲ-1 · 3 Ⅲ-2 · 4 주변부(안 그림)
+const HUB = [["#b63539", "중심지Ⅰ"], ["#f561bd", "중심지Ⅱ"], ["#79aff0", "중심지Ⅲ-1"], ["#feb065", "중심지Ⅲ-2"], ["#c0c0c0", "주변부"]];
+let hubCells = null;
 const baseKind = () => (state.base === "tile" && !state.tilesOK ? "plain" : state.base);
 const ARROW = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><path d='M2 6 L64 32 L2 58 L14 32 Z' fill='#fff'/></svg>");
 const state = { yr: "", projOn: false, proj: null, poff: new Set(), projData: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
-  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "flow", base: "tile", adm: false, tilesOK: false, zoom: 6.2, t: 0, dmode: "region", domAll: false, cline: true, dv: "io" };
+  anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "flow", base: "tile", adm: false, tilesOK: false, zoom: 6.2, t: 0, dmode: "region", domAll: false, cline: true, dv: "io", lv: "sg", hub: false };
 const fac = (ds = state.ds) => (ds === "kt" ? KT_F : 1);
 const unit = () => (state.ds === "cmp" ? "%" : state.ds === "kt" ? "통행" : "명");
 const short = (n) => n.replace(/생활권$/, "권"); // 서울·광명생활권 → 서울·광명권
-const cmp = () => state.ds === "cmp";
+const cmp = () => state.ds === "cmp"; // ponytail: KCB 를 뺀 뒤(11-16) 늘 false — KT·KCB 비교 분기는 남아 있지만 안 쓰임, 정리할 때 함께 지울 것
 const inner = () => state.dir === "int";
 const pm = () => state.proj != null; // 프로젝트 모드: 고른 대전환 프로젝트 격자로 오는 흐름
 const detailOn = () => !inner() && state.focusO != null;
 const bk = () => (pm() ? "p" : inner() ? "i" : "") + state.ds; // 화살표(묶음·내부·프로젝트) 임계치 키
 const gk = () => "g" + state.ds; // 누른 묶음의 1km 격자 화살표 임계치 키
-const tk = () => (detailOn() ? gk() : bk()); // 슬라이더가 지금 조절하는 임계치
-let regions, centers, summary, labels, G, Z, projects, vec, deckgl, rname = [], RID = [], statById = {}, ridIdx = {}, regionBy = {};
-const SUM = {}, FL = { "": state.flows, prev: {} }; // 연도별 summary·생활권 흐름 캐시
-// 흐름 캐시 키: 생활권 rid 또는 프로젝트 p{id} → 파일 flows/rNNN · pflows/p{id}
+const tk = () => (state.cellMode && state.pick ? "ckt" : detailOn() ? gk() : bk()); // 슬라이더가 지금 조절하는 임계치 (ckt = 격자별 이동 화살표)
+let regions, centers, summary, labels, G, Z, GT, projects, vec, deckgl, rname = [], RID = [], statById = {}, ridIdx = {}, regionBy = {};
+// 구역 기준(시군·자족도 50/75/90%)마다 따로: 구역 경계·중심지·격자 소속(Z)·연도별 summary(SUM)·흐름 캐시(FL). useLevel 이 바꿔 낀다
+let LEVELS = [], SUM = {}, FL = { "": {}, prev: {} };
+const LV = {};
+const levelOf = (lv) => LEVELS.find((l) => l.lv === lv);
+const U = () => (state.lv === "sg" ? "시군" : "생활권"); // 화면에 쓰는 구역 이름
+// 흐름 캐시 키: 구역 rid 또는 프로젝트 p{id} → 파일 L/<기준>/flows/rNNN · pflows/p{id} (프로젝트 흐름은 기준과 무관)
 const fkey = () => (pm() ? `p${state.proj}` : state.rid);
-const flowKey = (k) => `${state.yr && state.yr + "/"}${k[0] === "p" ? `pflows/${k}` : `flows/r${k.slice(-3)}`}`;
+const flowKey = (k) => (k[0] === "p" ? `${state.yr && state.yr + "/"}pflows/${k}` : `L/${state.lv}/${state.yr && state.yr + "/"}flows/r${k.slice(-3)}`);
 async function loadFlows(k) {
   const d = await load(flowKey(k));
   // 프로젝트 행 [출발 격자, 값] → 생활권 유입 행 모양 [출발 격자, 0, 값, 출발 생활권, 출발=중심지] (gridzone 으로)
@@ -511,6 +543,43 @@ function probeTiles() {
   });
 }
 
+// 구역 기준 하나의 데이터를 (처음이면 읽어) 전역에 낀다. 프로젝트의 배경 구역(rz)도 기준마다 다시 센다
+async function useLevel(lv) {
+  const L = (LV[lv] ??= await (async () => {
+    const get = (k) => load(`L/${lv}/${k}`);
+    const [regions, centers, summary, Z] = await Promise.all(["regions", "centers", "summary", "gridzone"].map(get));
+    const SUM = { "": summary }; // 단일 파일 버전엔 이전 연도가 없다 → 연도 버튼 숨김
+    if (!window.__store || `L/${lv}/prev/summary` in window.__store) SUM.prev = await get("prev/summary");
+    const centersBy = {};
+    centers.features.forEach((f) => (centersBy[f.properties.rid] ??= []).push(f));
+    // 덩어리 번호: 구역 안에서 격자 수 큰 순 1, 2, … (내부 모드 색·이름표)
+    Object.values(centersBy).forEach((fs) => fs.sort((a, b) => b.properties.n_grid - a.properties.n_grid).forEach((f, i) => (f.properties.no = i + 1)));
+    return { regions, centers, summary, Z, SUM, FL: { "": {}, prev: {} }, centersBy,
+      partOf: Object.fromEntries(centers.features.map((f) => [f.properties.part, f.properties])),
+      partFeat: Object.fromEntries(centers.features.map((f) => [f.properties.part, f])) };
+  })());
+  ({ regions, centers, summary, Z, SUM, FL } = L);
+  if (!SUM[state.yr]) state.yr = "";
+  Object.assign(state, { lv, flows: FL[state.yr], centersBy: L.centersBy, partOf: L.partOf, partFeat: L.partFeat, cells: {}, rcells: {}, allCells: null, gioKey: null });
+  rname = summary.regions.map((r) => short(r.rname));
+  RID = summary.regions.map((r) => r.rid);
+  ridIdx = Object.fromEntries(RID.map((r, i) => [r, i]));
+  statById = Object.fromEntries(SUM[state.yr].stats.map((x) => [x.rid, x]));
+  regionBy = Object.fromEntries(regions.features.map((f) => [f.properties.rid, f]));
+  for (const { properties: p } of projects.features) { // 프로젝트 격자가 가장 많이 속한 구역
+    const n = {};
+    for (const g of p.g) n[Z[g] >> 1] = (n[Z[g] >> 1] || 0) + 1;
+    p.rz = RID[+Object.keys(n).reduce((a, b) => (n[b] > n[a] ? b : a))];
+  }
+}
+// 경위도에서 가장 가까운 1km 격자 idx (구역 기준을 바꿀 때 보던 자리를 이어 가려고)
+const nearestGrid = (lon, lat, km = Infinity) => { // km 안에 없으면 -1
+  const k = Math.cos((lat * Math.PI) / 180);
+  let best = -1, bd = (km / 111) ** 2;
+  for (let i = 0; i < G.length; i++) { const dx = (G[i][0] - lon) * k, dy = G[i][1] - lat, d = dx * dx + dy * dy; if (d < bd) { bd = d; best = i; } }
+  return best;
+};
+
 // 행정경계 배경은 타일을 못 쓸 때만 받는다 (2.7MB)
 async function ensureVec() {
   if (!vec) vec = Object.fromEntries(await Promise.all(["sido", "sgg"].map(async (k) => [k, await load(k)])));
@@ -518,23 +587,13 @@ async function ensureVec() {
 
 async function init() {
   const tiles = probeTiles();
-  [regions, centers, summary, labels, G, Z, projects] = await Promise.all(["regions", "centers", "summary", "labels", "grids", "gridzone", "projects"].map(load));
+  [labels, G, projects, LEVELS] = await Promise.all(["labels", "grids", "projects", "levels"].map(load));
+  LEVELS = LEVELS.filter((l) => !window.__store || `L/${l.lv}/summary` in window.__store); // 단일 파일 버전은 기본 기준만
   state.projData = projects;
-  rname = summary.regions.map((r) => short(r.rname));
-  RID = summary.regions.map((r) => r.rid);
-  RID.forEach((r, i) => (ridIdx[r] = i));
-  summary.stats.forEach((s) => (statById[s.rid] = s));
-  SUM[""] = summary;
-  // 단일 파일 버전엔 이전 연도가 없다 → 연도 버튼 숨김
-  if (!window.__store || "prev/summary" in window.__store) SUM.prev = await load("prev/summary");
-  regions.features.forEach((f) => (regionBy[f.properties.rid] = f));
-  const byRid = {};
-  centers.features.forEach((f) => (byRid[f.properties.rid] ??= []).push(f));
-  // 덩어리 번호: 생활권 안에서 격자 수 큰 순 1, 2, … (내부 모드 색·이름표)
-  Object.values(byRid).forEach((fs) => fs.sort((a, b) => b.properties.n_grid - a.properties.n_grid).forEach((f, i) => (f.properties.no = i + 1)));
-  state.centersBy = byRid;
-  state.partOf = Object.fromEntries(centers.features.map((f) => [f.properties.part, f.properties]));
-  state.partFeat = Object.fromEntries(centers.features.map((f) => [f.properties.part, f]));
+  // 주소: #<기준>-rNNN (예전 #rNNN 은 자족도 75%), 프로젝트는 #p<id>
+  const hm = location.hash.match(/^#(?:(\w+)-)?r(\d{3})$/);
+  await useLevel(levelOf(hm ? hm[1] ?? "t75" : "")?.lv ?? LEVELS[0].lv);
+  $("lvs").innerHTML = LEVELS.map((l) => `<button data-lv="${l.lv}" aria-pressed="false" title="${l.name} (${l.n}개 구역)">${l.lv === "sg" ? l.name : l.name.replace("자족도 ", "")}</button>`).join("");
 
   state.tilesOK = await tiles;
   if (!state.tilesOK) { state.adm = true; await ensureVec(); } // 타일이 없으면 땅 색 + 행정경계
@@ -544,13 +603,14 @@ async function init() {
     initialViewState: KOREA,
     controller: true,
     getTooltip,
-    getCursor: ({ isDragging }) => (isDragging ? "grabbing" : "default"), // 손 모양 대신 기본 화살표
+    getCursor: ({ isDragging }) => (isDragging ? "grabbing" : state.cellMode ? "crosshair" : "default"), // 손 모양 대신 기본 화살표
     onViewStateChange: ({ viewState }) => {
       const crossed = (viewState.zoom >= 8.3) !== (state.zoom >= 8.3);
       state.zoom = viewState.zoom;
       if (crossed && !state.anim) draw();
     },
     onClick: (info) => {
+      if (state.cellMode) { const gi = info.coordinate && nearestGrid(...info.coordinate, 0.75); if (gi >= 0) pickCell(gi); return; } // 격자별 이동
       const id = info.layer?.id;
       if (id === "arrows" || id === "heads") toggleFocus(info.object.o);
       else if (id === "projects") selectProj(info.object.properties.id);
@@ -561,7 +621,7 @@ async function init() {
   wire();
   syncControls();
   renderList();
-  const sp = RID.find((r) => location.hash === `#r${r.slice(-3)}`), pp = projects.features.find((f) => location.hash === `#p${f.properties.id}`);
+  const sp = hm && RID.find((r) => r.slice(-3) === hm[2]), pp = projects.features.find((f) => location.hash === `#p${f.properties.id}`);
   if (pp) await selectProj(pp.properties.id); else if (sp) await select(sp); else { rebuild(); draw(); }
   new MutationObserver(() => { rebuild(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { rebuild(); draw(); });
@@ -587,15 +647,17 @@ function reset({ fit = false } = {}) {
 function wire() {
   const on = (attr, fn) => document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.addEventListener("click", () => fn(b.dataset[attr])));
   on("ds", (v) => { state.ds = v; reset(); });
-  // KT·KCB 비교는 데이터 버튼과 따로 (끄면 보던 데이터로)
-  $("cmp-on").addEventListener("change", (e) => { if (e.target.checked) { state.ds1 = state.ds; state.ds = "cmp"; } else state.ds = state.ds1 ?? "kt"; reset(); });
   on("yr", async (v) => {
     state.yr = v; state.flows = FL[v];
     statById = Object.fromEntries(SUM[v].stats.map((s) => [s.rid, s]));
     const k = fkey();
     if (k && !state.flows[k]) state.flows[k] = await loadFlows(k);
     reset();
+    if (state.pick) pickCell(state.pick.gi); // 격자별 이동도 그 연도로
   });
+  const cellMode = (on) => { state.cellMode = on; state.pick = null; syncControls(); draw(); };
+  $("cell-b").addEventListener("click", () => cellMode(!state.cellMode));
+  $("chip-cell-x").addEventListener("click", () => cellMode(false));
   on("dir", (v) => { state.dir = v; state.part = null; reset({ fit: true }); });
   // 외부이동(유입·유출) / 내부이동. 외부로 돌아가면 보던 방향
   on("mv", (v) => {
@@ -626,6 +688,18 @@ function wire() {
     state.dv = v; syncControls(); draw();
     if (state.rid && !pm() && !state.domAll) fitTo(state.rid);
   });
+  // 구역 기준: 고른 구역이 있으면 그 중심이 속한 새 기준의 구역으로, 프로젝트면 같은 프로젝트로 이어서
+  on("lv", async (v) => {
+    if (v === state.lv) return;
+    const was = !pm() && state.rid ? regionBy[state.rid].properties : null, proj = state.proj;
+    await useLevel(v);
+    state.focusO = state.hoverO = state.part = null;
+    if (state.pick) pickCell(state.pick.gi); // 격자별 이동의 "같은 구역 안" 비율도 새 기준으로
+    if (proj != null) { state.proj = null; await selectProj(proj); return; }
+    if (was) { state.rid = null; await select(RID[Z[nearestGrid(was.cx, was.cy)] >> 1]); syncControls(); renderList(); return; }
+    reset();
+  });
+  $("hub-on").addEventListener("change", async (e) => { state.hub = e.target.checked; if (state.hub) GT ??= await load("gtype"); syncControls(); draw(); });
   on("base", async (v) => { state.base = v; if (baseKind() === "plain") await ensureVec(); syncControls(); draw(); });
   $("adm").addEventListener("click", async () => { state.adm = !state.adm; if (state.adm) await ensureVec(); syncControls(); draw(); });
   $("cline").addEventListener("change", (e) => { state.cline = e.target.checked; domLegend(); draw(); });
@@ -689,7 +763,8 @@ function syncControls(updateRange = true) {
   const v = state.thr[tk()];
   if (updateRange) $("thr-range").value = toSlider(v);
   $("thr-num").value = v;
-  $("thr-l").textContent = detailOn() ? `임계치 (누른 흐름의 1km 격자 · ${cmp() ? "흐름 안 비중 %" : "일정 통행량"} 이상)`
+  $("thr-l").textContent = state.cellMode && state.pick ? "임계치 (고른 격자로 오는 1km 격자 화살표 · 일정 통행량 이상)"
+    : detailOn() ? `임계치 (누른 흐름의 1km 격자 · ${cmp() ? "흐름 안 비중 %" : "일정 통행량"} 이상)`
     : `임계치 (일정 ${cmp() ? "비중 %" : "통행량"} 이상)`;
   document.documentElement.style.setProperty("--ds", `var(--${state.ds})`);
   document.documentElement.dataset.mode = pm() ? "proj" : state.dir;
@@ -704,13 +779,25 @@ function syncControls(updateRange = true) {
   $("yr").hidden = !SUM.prev;
   document.querySelectorAll("[data-yr]").forEach((b) => { if (SUM[b.dataset.yr]) b.textContent = yl(SUM[b.dataset.yr].years); });
   const y = SUM[state.yr].years;
-  $("sub").textContent = `KT ${y.kt} · KCB ${y.kcb} · 생활권(목표 자족도 75%)·중심지Ⅰ·Ⅱ 2025`;
+  $("sub").textContent = `KT ${y.kt} · 구역 ${state.lv === "sg" ? "시군" : `생활권(목표 ${levelOf(state.lv).name})`} · 중심지Ⅰ·Ⅱ 2025`;
+  $("list-h").textContent = $("lh-u").textContent = U();
+  $("q").placeholder = `${U()} 검색`;
+  $("hub-on").checked = state.hub;
+  // 격자별 이동: 버튼·칩·범례
+  const P = state.pick, kf = fac("kt");
+  $("cell-b").setAttribute("aria-pressed", !!state.cellMode);
+  $("chip-cell").hidden = !state.cellMode;
+  $("chip-cell-t").textContent = !P ? "격자별 이동 — 지도에서 1km 격자를 누르세요"
+    : `고른 격자 (${rname[Z[P.gi] >> 1]}) 로 오는 통근 ${fmt(P.sum * kf)} 통행 · 출발 격자 ${P.rows.length.toLocaleString()}개 (화살표 ${P.arrows.filter((d) => d.v >= state.thr.ckt).length.toLocaleString()}) · 같은 ${U()} 안 ${P.sum ? pct(P.inner / P.sum) : "–"}`;
+  $("lg-cell").hidden = !(state.cellMode && P);
+  $("lg-cell-sw").style.background = `linear-gradient(90deg, ${(isDark() ? [...CELL_RAMP].reverse() : CELL_RAMP).join(", ")})`;
+  $("lg-hub").hidden = !state.hub;
+  $("lg-hub").innerHTML = "<small>국토공간거점지도 2025 (1km 격자)</small>" + HUB.slice(0, 4).map(([c, n]) => `<span><span class="lsw" style="background: ${c}"></span>${n}</span>`).join("");
   domLegend();
-  for (const [attr, key] of [["yr", "yr"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"], ["base", "base"], ["dv", "dv"]])
+  for (const [attr, key] of [["yr", "yr"], ["ds", "ds"], ["dir", "dir"], ["ot", "ot"], ["kind", "kind"], ["dm", "dmode"], ["bm", "bm"], ["base", "base"], ["dv", "dv"], ["lv", "lv"]])
     document.querySelectorAll(`[data-${attr}]`).forEach((x) => x.setAttribute("aria-pressed", x.dataset[attr] === state[key]));
   $("base-tile").title = state.tilesOK ? "Esri 회색 지도" : "이 환경에서는 외부 지도 타일을 불러올 수 없어 땅 색만 칠합니다";
   document.querySelectorAll("[data-mv]").forEach((x) => x.setAttribute("aria-pressed", (x.dataset.mv === "int") === inner()));
-  $("cmp-on").checked = cmp();
   $("anim").checked = state.anim;
   const base = baseKind();
   $("attr").textContent = [{ tile: "© Esri, HERE, Garmin, © OpenStreetMap contributors", sat: "위성영상 © 브이월드(국토교통부)" }[base],
@@ -718,13 +805,13 @@ function syncControls(updateRange = true) {
   $("adm").setAttribute("aria-pressed", state.adm);
   $("lg-adm").hidden = !state.adm;
   const rel = state.dir === "in" ? "출발" : "도착", size = cmp() ? "KT·KCB 평균 비중" : "통근량";
-  $("lg-a").textContent = !inner() ? (cmp() ? "굵기 = KT·KCB 평균 비중" : `굵기 = ${pm() ? "도착" : state.dir === "in" ? "유입" : "유출"}량 · 색 = ${rel} 생활권`)
+  $("lg-a").textContent = state.cellMode && state.pick ? "굵기 = 출발 격자 → 고른 격자 통근량" : !inner() ? (cmp() ? "굵기 = KT·KCB 평균 비중" : `굵기 = ${pm() ? "도착" : state.dir === "in" ? "유입" : "유출"}량 · 색 = ${rel} ${U()}`)
     : `굵기 = ${size}${cmp() ? "" : { pc: " · 색 = 도착 중심지", cp: " · 색 = 출발 중심지", cc: " · 색 = 출발 중심지", pp: "" }[state.kind]}`;
   const dom = state.bm === "dom"; // 우세지도엔 화살표·중심지가 없으니 그 범례도 숨김
   $("lg-a").parentElement.hidden = dom;
   $("lg-cmp").hidden = !cmp() || dom;
   $("lg-cmp-t").textContent = `KCB 비중 큼 · 비슷 · KT 비중 큼 (${inner() ? "상대 차이" : "±5%p"})`;
-  $("lg-c").parentElement.hidden = pm() || dom;
+  $("lg-c").parentElement.hidden = pm() || dom || !!state.cellMode;
   $("lg-c").textContent = state.dir !== "out" ? "중심지 (마우스 올리면 이름, 누르면 그 중심지만)"
     : state.dmode === "part" ? "도착 중심지 (마우스 올리면 이름)" : "중심지 (마우스 올리면 이름)";
 }
@@ -758,7 +845,7 @@ async function selectProj(id) {
 function closeProj() {
   if (!pm()) return;
   state.proj = null;
-  history.replaceState(null, "", `#r${state.rid.slice(-3)}`);
+  history.replaceState(null, "", `#${state.lv}-r${state.rid.slice(-3)}`);
   state.projData = { ...projects, features: projects.features.filter(({ properties: p }) => !state.poff.has(p.ktype)) };
   (state.flows[state.rid] ? Promise.resolve() : loadFlows(state.rid).then((d) => (state.flows[state.rid] = d))).then(() => reset({ fit: true }));
 }
@@ -782,7 +869,7 @@ async function select(rid) {
   if (rid === state.rid && !pm()) return;
   if (pm()) { state.proj = null; state.projData = { ...projects, features: projects.features.filter(({ properties: p }) => !state.poff.has(p.ktype)) }; syncControls(); }
   state.rid = rid; state.focusO = null; state.hoverO = null; state.part = null; state.domAll = false;
-  history.replaceState(null, "", `#r${rid.slice(-3)}`);
+  history.replaceState(null, "", `#${state.lv}-r${rid.slice(-3)}`);
   $("regions").querySelectorAll("li").forEach((li) => li.setAttribute("aria-selected", li.dataset.rid === rid));
   if (!state.flows[rid]) state.flows[rid] = await loadFlows(rid);
   rebuild();
@@ -971,7 +1058,9 @@ function cell(i) {
   const kx = 111320 * Math.cos(phi), c = Math.cos(g), s = Math.sin(g);
   return [[-500, -500], [500, -500], [500, 500], [-500, 500]].map(([dx, dy]) => [lon + (dx * c - dy * s) / kx, lat + (dx * s + dy * c) / 110574]);
 }
-const allCells = () => (state.allCells ??= Z.map((z, i) => ({ r: z >> 1, i, p: cell(i) })));
+const POLY = []; // 1km 격자 칸 모양 (구역 기준과 무관 — 한 번만 계산)
+const poly = (i) => (POLY[i] ??= cell(i));
+const allCells = () => (state.allCells ??= Z.map((z, i) => ({ r: z >> 1, i, p: poly(i) })));
 const regionCells = (rid) => ((state.rcells ??= {})[rid] ??= allCells().filter((c) => c.r === ridIdx[rid])); // 한 생활권 격자 전부
 function cellsOf(rid) {
   if (state.cells?.[rid]) return state.cells[rid];
@@ -1068,6 +1157,13 @@ function layers() {
     autoHighlight: state.dir !== "out", highlightColor: A(C.fg, 220),
     updateTriggers: { getFillColor: trig, getLineColor: trig, getLineWidth: trig } }));
 
+  // 국토공간거점지도 (왼쪽 아래 버튼): 중심지Ⅰ~Ⅲ-2 격자를 유형 색으로 (주변부 제외) — 중심지 덩어리 위, 화살표 아래
+  if (state.hub && GT) {
+    hubCells ??= GT.flatMap((t, i) => (t < 4 ? [{ t, p: poly(i) }] : []));
+    const hc = HUB.map(([c]) => rgb(c, 200));
+    out.push(new deck.PolygonLayer({ id: "hub", data: hubCells, getPolygon: (c) => c.p, filled: true, stroked: false, getFillColor: (c) => hc[c.t] }));
+  }
+
   // 국토공간대전환 프로젝트 폴리곤: 유형별 색 (원래 대전환 대시보드와 같음), 켜 둔 유형·권역만. 고른 프로젝트는 진하게
   if (state.projOn) {
     const on = (f) => f.properties.id === state.proj;
@@ -1076,6 +1172,24 @@ function layers() {
       getLineWidth: (f) => (on(f) ? 3 : 1.4), lineWidthUnits: "pixels", autoHighlight: true, highlightColor: A(C.fg, 50),
       updateTriggers: { getFillColor: state.proj, getLineWidth: state.proj } }));
   }
+
+  // 격자별 이동 살펴보기: 고른 격자로 오는 통근의 출발 격자 (로그 6단계 파랑) + 고른 격자 굵은 테두리. 켜 있으면 화살표는 안 그림
+  if (state.cellMode && state.pick) {
+    const P = state.pick, ramp = (D.theme === "dark" ? [...CELL_RAMP].reverse() : CELL_RAMP).map((c) => rgb(c, 230)), lm = Math.log1p(P.max);
+    out.push(new deck.PolygonLayer({ id: "pick-from", data: P.rows, pickable: true, getPolygon: (r) => poly(r[0]), filled: true, stroked: false,
+      getFillColor: (r) => ramp[Math.min(5, Math.floor((6 * Math.log1p(r[1])) / lm))], updateTriggers: { getFillColor: [P.gi, D.theme, state.yr] } }));
+    out.push(new deck.PolygonLayer({ id: "pick-cell", data: [P.gi], getPolygon: (g) => poly(g), filled: false, stroked: true,
+      getLineColor: C.fg, getLineWidth: 3, lineWidthUnits: "pixels", updateTriggers: { getLineColor: D.theme } }));
+    // 출발 격자 → 고른 격자 화살표 (임계치 이상, 굵기 = 양)
+    const t = state.thr.ckt, vmax = P.max * fac("kt"), aw = (v) => 0.6 + 6 * Math.sqrt(v / vmax), shown = P.arrows.filter((d) => d.v >= t);
+    out.push(new deck.PathLayer({ id: "pick-arrows", data: shown, pickable: true, getPath: (d) => d.path, getColor: A(C.fg, 160), getWidth: (d) => aw(d.v),
+      widthUnits: "pixels", capRounded: true, jointRounded: true, updateTriggers: { getColor: D.theme, getWidth: [P.gi, t] } }));
+    out.push(new deck.IconLayer({ id: "pick-heads", data: shown, iconAtlas: ARROW,
+      iconMapping: { a: { x: 0, y: 0, width: 64, height: 64, anchorX: 64, anchorY: 32, mask: true } },
+      getIcon: () => "a", getPosition: (d) => d.path[40], getAngle: (d) => d.angle, getSize: (d) => aw(d.v) * 1.6 + 6, sizeUnits: "pixels",
+      getColor: A(C.fg, 200), updateTriggers: { getColor: D.theme, getSize: [P.gi, t] } }));
+  }
+  if (state.cellMode && !dom) return out;
 
   if (dom) { // 우세지도는 유입÷유출 현황만 — 화살표·도착점·흐름 이름표 없음. 중심지 덩어리 경계선만 켜고 끔
     // (생활권을 고르면 그 생활권 중심지만, 아니면 전국. 전국 줌에선 가늘게)
@@ -1335,7 +1449,7 @@ function renderTable() {
   // 도착점이 덩어리면 '중심지' 열 = 도착 중심지 번호 (지도 번호와 같음; 유출이면 상대 생활권의 번호)
   const t = state.thr[bk()], c = cmp(), pc = state.dmode === "part", n = (c ? 5 : 4) + (pc ? 1 : 0);
   $("tbl-title").textContent = pm() ? `${projOf(state.proj).properties.name} 도착 통근` : state.rid ? ro(rname[ridIdx[state.rid]]) : "상대 생활권";
-  $("thead").innerHTML = `<tr><th></th><th>${state.dir === "in" ? "출발" : "도착"} 생활권</th>${pc ? `<th class="num">중심지</th>` : ""}${c
+  $("thead").innerHTML = `<tr><th></th><th>${state.dir === "in" ? "출발" : "도착"} ${U()}</th>${pc ? `<th class="num">중심지</th>` : ""}${c
     ? `<th class="num">KT</th><th class="num">KCB</th><th class="num">차이</th>` : `<th class="num">${unit()}</th><th class="num">비중</th>`}</tr>`;
   let sep = false;
   // 지도에 그린 흐름이 위, 나머지는 '지도에 없음' 아래 (임계치는 상대 생활권 합 기준)
@@ -1373,6 +1487,11 @@ function getTooltip({ layer, object }) {
     return { className: "tip", html: `<b>${flowName(object)}</b><br>${val}<br><small>누르면 1km 출발 격자별 화살표</small>` };
   }
   if (layer.id === "detail") return { className: "tip", html: `1km 출발 격자<br>${fmt(object.v)}${cmp() ? "" : ` ${u}`}` };
+  if (layer.id === "pick-arrows") return { className: "tip", html: `<b>출발 격자 · ${rname[Z[object.o] >> 1]}</b><br>→ 고른 격자 ${fmt(object.v)} 통행` };
+  if (layer.id === "pick-from") {
+    const [o, v] = object, P = state.pick;
+    return { className: "tip", html: `<b>출발 격자 · ${rname[Z[o] >> 1]}</b><br>→ 고른 격자 ${fmt(v * fac("kt"))} 통행 (${pct(v / P.sum)})` };
+  }
   if (layer.id === "dom") { // 우세지도에서 고른 생활권의 격자
     const ds = domDs(), v = gioOf(state.rid, ds).get(object.i), f = fac(ds);
     if (!v) return { className: "tip", html: "1km 격자<br>통근 없음" };
