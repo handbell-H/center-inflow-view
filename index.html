@@ -15,19 +15,20 @@
   --kt: #1d5fc4; --kcb: #c25e10; --cmp: #17212b;
   --dom-in: #56b4e9; --dom-eq: #d6d4ce; --dom-out: #e87ba4; /* 우세지도 유입(하늘) · 균형 · 유출(분홍) */
   --dom-int: #1baf7a; --dom-ext: #6250d6; /* 내부(초록) · 외부(보라) */
+  --adm: #8a5a1e; /* 행정경계 점선 (생활권 경계와 다른 갈색) */
   --dom-in-int: #5cb8ea; --dom-in-ext: #1d64a0; --dom-out-int: #e06a98; --dom-out-ext: #b02d65; /* 둘 다: 2×2 겹침 */
   --font: "KoPubWorld Dotum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
-  --dom-in: #3597cf; --dom-eq: #45443f; --dom-out: #d55181;
+  --dom-in: #3597cf; --dom-eq: #45443f; --dom-out: #d55181; --adm: #e0b46e;
   --dom-int: #199e70; --dom-ext: #9085e9; --dom-in-int: #4a9bd2; --dom-in-ext: #2766a6; --dom-out-int: #d8669a; --dom-out-ext: #a33266;
   --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0e1318; --panel: #151c24; --fg: #e5ebf1; --muted: #93a0ad; --line: #2b3744; --row: #1c2630;
   --sea: #0b1116; --land: #19212a; --sido: #4d5b69; --sgg: #26313c; --other: #66717c;
-  --dom-in: #3597cf; --dom-eq: #45443f; --dom-out: #d55181;
+  --dom-in: #3597cf; --dom-eq: #45443f; --dom-out: #d55181; --adm: #e0b46e;
   --dom-int: #199e70; --dom-ext: #9085e9; --dom-in-int: #4a9bd2; --dom-in-ext: #2766a6; --dom-out-int: #d8669a; --dom-out-ext: #a33266;
   --kt: #6ea6ff; --kcb: #f0a35a; --cmp: #e5ebf1; color-scheme: dark }
 html, body { height: 100%; }
@@ -61,7 +62,7 @@ h2 { font-size: 18px; font-weight: 700; margin: 0; text-wrap: balance; }
 aside > section { border-top: 1px solid var(--line); padding-top: 12px; }
 aside .thr-l { margin-top: 12px; }
 .mapctl { position: absolute; right: 12px; top: 12px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
-  padding: 8px 10px; display: grid; gap: 7px; width: 196px; }
+  padding: 8px 10px; display: grid; gap: 7px; width: 228px; }
 .mapctl .chk { font-size: 12px; }
 .mapctl .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .mapctl .btns button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 5px 8px; cursor: pointer; }
@@ -141,10 +142,10 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
 .chip button { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
 .empty { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; font-size: 13px; }
 /* 우세지도에서 고른 생활권의 비율 막대 (지도 왼쪽 위, 비율마다 한 단 — 둘 다면 두 단, 좁으면 아래로) */
-.dombar { position: absolute; left: 12px; top: 12px; z-index: 2; user-select: none; box-sizing: border-box; width: min(400px, calc(100% - 256px)); /* 오른쪽 조작 상자와 안 겹치게 */
+.dombar { position: absolute; left: 12px; top: 12px; z-index: 2; user-select: none; box-sizing: border-box; width: min(400px, calc(100% - 288px)); /* 오른쪽 조작 상자와 안 겹치게 */
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; font-size: 13px;
   display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 6px 14px; }
-.dombar.two { width: min(680px, calc(100% - 256px)); }
+.dombar.two { width: min(680px, calc(100% - 288px)); }
 .dombar > .hd { grid-column: 1 / -1; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
 .dombar .col { display: grid; gap: 6px; align-content: start; }
 .dombar small { color: var(--muted); font-size: 11px; }
@@ -254,6 +255,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
     <div class="mapctl">
       <div class="seg sm" role="group" aria-label="배경지도">
         <button id="bm-tile" data-bm="tile" aria-pressed="false">타일</button>
+        <button data-bm="sat" aria-pressed="false" title="브이월드 위성영상 + 지명·도로 (현장 토지이용 확인)">위성</button>
         <button data-bm="vec" aria-pressed="true">행정경계</button>
         <button data-bm="dom" aria-pressed="false" title="생활권마다 유입÷유출 단계를 1km 격자에 칠함">우세지도</button>
       </div>
@@ -266,6 +268,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
         <button data-dv="ie" aria-pressed="false" title="내부(생활권 안) : 외부(생활권 밖과 오간) 통근">내부·외부</button>
         <button data-dv="both" aria-pressed="false" title="두 비율을 한 번에 — 막대 넷, 지도는 2×2 겹침색">둘 다</button>
       </div>
+      <label class="chk" for="adm" id="adm-l" hidden><input id="adm" type="checkbox"> 행정경계 선</label>
       <label class="chk" for="cline" id="cline-l" hidden><input id="cline" type="checkbox" checked> 중심지 경계</label>
       <label class="chk" for="anim"><input id="anim" type="checkbox"> 흐름 애니메이션</label>
       <label class="chk" for="proj-on"><input id="proj-on" type="checkbox"> 국토공간대전환 프로젝트</label>
@@ -279,6 +282,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
       <div><svg width="22" height="10" aria-hidden="true"><path d="M1 5 H15" stroke="currentColor" stroke-width="3" opacity=".5"/><path d="M14 1 L21 5 L14 9 Z" fill="currentColor"/></svg><span id="lg-a"></span></div>
       <div id="lg-proj" hidden></div>
       <div id="lg-dom" hidden></div>
+      <div id="lg-adm" hidden><span class="lsw" id="lg-adm-sw" style="height: 0; border-top: 2px dashed var(--adm)"></span><span>행정경계 (굵은 점선 시도 · 가는 점선 시군구)</span></div>
       <div id="lg-cmp" hidden><span class="lsw" style="background: linear-gradient(90deg, var(--kcb), var(--other), var(--kt))"></span><span id="lg-cmp-t"></span></div>
       <div><svg width="22" height="10" aria-hidden="true"><rect width="22" height="10" rx="2" fill="currentColor" opacity=".7"/></svg><span id="lg-c">중심지 (눌러서 덩어리 선택)</span></div>
       <small>출처 국토교통부(국토공간거점지도, 국가교통DB)</small>
@@ -324,7 +328,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "hcud4kNPoGxqQ0VLVapYrA==", "iter": 600000, "check": "q7Mm6wXig3FBdmQvFyykaudTWMvCLAw5CfaEBTppEnjOrGFrLNDxrc2sKbLQim7+6o9Djw=="}</script>
+<script>window.__site={"salt": "vbWTWMKD6qgMREcN+UuObA==", "iter": 600000, "check": "1ctXUPpzShbDKZMH0M2HWxL7G6k5/FldXeX50t7bfqVsukDXahTeCLAOFWXjGnIxyH7mnA=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -384,6 +388,11 @@ const CAT = {
 };
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas";
 const TILES = { light: "World_Light_Gray_Base", dark: "World_Dark_Gray_Base" };
+// 브이월드 WMTS (국토교통부 공간정보 오픈플랫폼). 인증키는 브라우저용(사이트 도메인 등록)이라 공개 코드에 있어도 된다
+const VWORLD = "https://api.vworld.kr/req/wmts/1.0.0/2FD0FCF6-DD85-4C04-8B40-73DFC71879FF";
+const DASH = [new deck.PathStyleExtension({ dash: true })]; // 행정경계 점선 (매 프레임 새로 만들면 셰이더를 다시 짠다)
+const SAT_ADM = [255, 215, 94, 235]; // 위성 위 행정경계는 밝은 노랑
+const admOn = () => state.bm === "vec" || state.bm === "dom" || !!state.adm; // 행정경계 점선을 그리나
 const ARROW = "data:image/svg+xml;utf8," + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><path d='M2 6 L64 32 L2 58 L14 32 Z' fill='#fff'/></svg>");
 const state = { yr: "", projOn: false, proj: null, poff: new Set(), projData: null, ds: "kt", dir: "in", ot: "all", kind: "pc", part: null, rid: null, thr: { ...DEFAULT_THR }, flows: {}, hoverO: null, focusO: null,
   anim: !matchMedia("(prefers-reduced-motion: reduce)").matches, bm: "vec", tilesOK: false, zoom: 6.2, t: 0, dmode: "region", domAll: false, cline: true, dv: "io" };
@@ -448,7 +457,7 @@ function gioOf(rid, ds) {
 const KOREA = { longitude: 127.8, latitude: 36.1, zoom: 6.2 };
 // 수정 요청 메모판 — 비밀번호 사이트에서만 (publish.py 가 .memo_token 을 data/memo 로 암호화해 실음). 글 하나 = 비공개 저장소 이슈 하나
 let memo = null;
-const gh = (path, opt = {}) => fetch(`https://api.github.com/repos/${memo.repo}${path}`, { ...opt,
+const gh = (path, opt = {}) => fetch(`https://api.github.com/repos/${memo.repo}${path}`, { cache: "no-store", ...opt, // 올린 글이 바로 목록에 (GitHub 응답은 60초 캐시)
   headers: { Authorization: `Bearer ${memo.token}`, Accept: "application/vnd.github+json", ...(opt.body ? { "Content-Type": "application/json" } : {}) } })
   .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`GitHub ${r.status}`))));
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -610,6 +619,7 @@ function wire() {
     state.dv = v; syncControls(); draw();
     if (state.rid && !pm() && !state.domAll) fitTo(state.rid);
   });
+  $("adm").addEventListener("change", async (e) => { state.adm = e.target.checked; if (state.adm) await ensureVec(); syncControls(); draw(); });
   $("cline").addEventListener("change", (e) => { state.cline = e.target.checked; domLegend(); draw(); });
   $("dom-reset").addEventListener("click", () => domHome(false));
   $("src-b").addEventListener("click", () => $("src-d").showModal());
@@ -695,7 +705,11 @@ function syncControls(updateRange = true) {
   document.querySelectorAll("[data-mv]").forEach((x) => x.setAttribute("aria-pressed", (x.dataset.mv === "int") === inner()));
   $("cmp-on").checked = cmp();
   $("anim").checked = state.anim;
-  $("attr").textContent = state.bm === "tile" ? "© Esri, HERE, Garmin, © OpenStreetMap contributors" : "SGIS 행정구역 2025.6";
+  $("attr").textContent = { tile: "© Esri, HERE, Garmin, © OpenStreetMap contributors", sat: "위성영상 © 브이월드(국토교통부)" }[state.bm] ?? "SGIS 행정구역 2025.6";
+  $("adm-l").hidden = !["tile", "sat"].includes(state.bm); // 타일·위성에서만 고름 (행정경계·우세지도 배경은 늘 그림)
+  $("adm").checked = !!state.adm;
+  $("lg-adm").hidden = !admOn();
+  $("lg-adm-sw").style.borderTopColor = state.bm === "sat" ? `rgb(${SAT_ADM.slice(0, 3)})` : "var(--adm)";
   const rel = state.dir === "in" ? "출발" : "도착", size = cmp() ? "KT·KCB 평균 비중" : "통근량";
   $("lg-a").textContent = !inner() ? (cmp() ? "굵기 = KT·KCB 평균 비중" : `굵기 = ${pm() ? "도착" : state.dir === "in" ? "유입" : "유출"}량 · 색 = ${rel} 생활권`)
     : `굵기 = ${size}${cmp() ? "" : { pc: " · 색 = 도착 중심지", cp: " · 색 = 출발 중심지", cc: " · 색 = 출발 중심지", pp: "" }[state.kind]}`;
@@ -878,7 +892,7 @@ function rebuildInner() {
 function rebuild() {
   const pal = CAT[isDark() ? "dark" : "light"];
   D.C = { fg: rgb(css("--fg")), panel: rgb(css("--panel")), muted: rgb(css("--muted")), other: rgb(css("--other")),
-    kt: rgb(css("--kt")), kcb: rgb(css("--kcb")), land: rgb(css("--land")), sido: rgb(css("--sido")), sgg: rgb(css("--sgg")),
+    kt: rgb(css("--kt")), kcb: rgb(css("--kcb")), land: rgb(css("--land")), sido: rgb(css("--sido")), sgg: rgb(css("--sgg")), adm: rgb(css("--adm")),
     dom: Object.fromEntries(Object.keys(KEYN).map((k) => [k, rgb(css(`--dom-${k}`))])) };
   D.theme = isDark() ? "dark" : "light";
   if (!state.rid) { D.list = []; D.dots = []; D.byO = new Map(); applyThreshold(); return; }
@@ -972,18 +986,14 @@ function layers() {
   const trig = [rid, state.proj, state.ds, state.dir, state.ot, state.kind, state.part, hov, foc, D.shown.length, D.dotsShown.length, D.theme, state.dmode, state.bm];
   const dom = state.bm === "dom";
   const out = [];
-  const tiles = (name) => new deck.TileLayer({ id: `tiles-${name}`, data: `${ESRI}/${name}/MapServer/tile/{z}/{y}/{x}`,
-    minZoom: 0, maxZoom: 16, tileSize: 256,
+  const tiles = (id, url, minZoom, maxZoom) => new deck.TileLayer({ id, data: url, minZoom, maxZoom, tileSize: 256,
     renderSubLayers: (p) => { const [[w, s], [e, n]] = p.tile.boundingBox;
       return new deck.BitmapLayer(p, { data: null, image: p.data, bounds: [w, s, e, n] }); } });
 
-  if (state.bm === "tile") out.push(tiles(TILES[D.theme]));
-  else if (vec) {
-    out.push(new deck.GeoJsonLayer({ id: "sido", data: vec.sido, filled: true, stroked: true,
-      getFillColor: C.land, getLineColor: C.sido, getLineWidth: 1, lineWidthUnits: "pixels", updateTriggers: { getFillColor: D.theme, getLineColor: D.theme } }));
-    out.push(new deck.GeoJsonLayer({ id: "sgg", data: vec.sgg, filled: false, stroked: true,
-      getLineColor: C.sgg, getLineWidth: 0.6, lineWidthUnits: "pixels", updateTriggers: { getLineColor: D.theme } }));
-  }
+  // 배경: 타일(Esri 회색) / 위성(브이월드 위성 + 지명·도로, 6~19 레벨) / 행정경계·우세지도(땅 색만 — 경계선은 아래 점선)
+  if (state.bm === "tile") out.push(tiles(`tiles-${TILES[D.theme]}`, `${ESRI}/${TILES[D.theme]}/MapServer/tile/{z}/{y}/{x}`, 0, 16));
+  else if (state.bm === "sat") out.push(tiles("sat", `${VWORLD}/Satellite/{z}/{y}/{x}.jpeg`, 6, 19), tiles("sat-names", `${VWORLD}/Hybrid/{z}/{y}/{x}.png`, 6, 19));
+  else if (vec) out.push(new deck.GeoJsonLayer({ id: "sido", data: vec.sido, filled: true, stroked: false, getFillColor: C.land, updateTriggers: { getFillColor: D.theme } }));
 
   // 우세지도 (1km 격자 칠, 확대하면 격자 경계선, 고른 비율 state.dv 의 색 키 domKey): 전국 보기면 전 생활권을 생활권 유형 색으로
   // — 생활권 층 아래. 생활권을 고르면 그 생활권 격자마다 gio 로 (막대는 지도 위 상자) — 마우스를 받게 생활권 층 위
@@ -1020,6 +1030,14 @@ function layers() {
   if (sel && !dom) out.push(new deck.PolygonLayer({ id: "cells", data: cellsOf(sel), getPolygon: (c) => c, filled: true, stroked: true,
     getFillColor: A(C.muted, 40), getLineColor: A(C.panel, 170), getLineWidth: 0.5, lineWidthUnits: "pixels",
     updateTriggers: { getFillColor: D.theme, getLineColor: D.theme } }));
+
+  // 행정경계 점선: 시도 굵게 · 시군구 가늘게, 생활권 경계와 다른 갈색 (위성 위엔 노랑) — 메모 #3. 행정경계·우세지도 배경은 늘, 타일·위성은 "행정경계 선" 체크
+  if (vec && admOn()) {
+    const ac = state.bm === "sat" ? SAT_ADM : A(C.adm, 230);
+    for (const [id, w, dash] of [["sgg", 1, [4, 3]], ["sido", 2, [9, 4]]])
+      out.push(new deck.GeoJsonLayer({ id: `adm-${id}`, data: vec[id], filled: false, stroked: true, getLineColor: ac, getLineWidth: w, lineWidthUnits: "pixels",
+        getDashArray: dash, dashJustified: true, extensions: DASH, updateTriggers: { getLineColor: [D.theme, state.bm] } }));
+  }
 
   { // 한글 지명 (시도, 확대하면 시군구)
     const lv = state.zoom >= 8.3 ? "sgg" : "sido";
