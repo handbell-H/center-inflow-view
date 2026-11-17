@@ -359,7 +359,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "dcb90f268e70", "check": "lHtle9FHBGPldGZFDVr0A+n7HLXZyxG5iO4NkOjHhL+2Y+jqtOqc5VHLWEmrEXCm9Ob7zw=="}</script>
+<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "dcb90f268e70", "check": "UIZjYkgE786jKlHXZlUCD2ya7nEfupJCBFFlj6PzB7lvVeFMwjLrNZrwBRHAB0N1Tb/mDw=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -430,7 +430,8 @@ const CELL_RAMP_OUT = ["#f6c4d8", "#efa0bf", "#e67aa5", "#d4558a", "#b0386c", "#
 const cellRamp = () => (state.pick?.out ? CELL_RAMP_OUT : CELL_RAMP);
 // 격자별 이동 화살표: 출발(O) 파랑 → 도착(D) 빨강, 점마다 색 (curve() 41점). 유입·유출 같은 규칙
 const OD_O = [31, 111, 209], OD_D = [224, 53, 43];
-const OD_GRAD = Array.from({ length: 41 }, (_, i) => [...OD_O.map((o, j) => Math.round(o + ((OD_D[j] - o) * i) / 40)), 200]);
+const odGrad = (a) => Array.from({ length: 41 }, (_, i) => [...OD_O.map((o, j) => Math.round(o + ((OD_D[j] - o) * i) / 40)), a]);
+const OD_GRAD = odGrad(200), OD_DIM = odGrad(70), OD_LIT = odGrad(255); // 보통 · 흐름 애니메이션 때 바탕 · 흐르는 입자
 const KDE_M = 5000; // 권역 커널밀도 반경 (m)
 
 // 격자별 이동 "권역" = 통근량 가중 커널밀도 (사분 커널, 반경 KDE_M, 0.5km 칸 — GIS 커널밀도와 같은 방식).
@@ -713,7 +714,8 @@ async function init() {
 }
 
 function loop(ts) {
-  if (state.anim && !document.hidden && state.rid && state.bm !== "dom") { state.t = (ts / 2600) % 1; draw(); }
+  const cellFlow = state.cellMode && state.pick && state.cv === "line"; // 격자별 이동 화살표도 흐름
+  if (state.anim && !document.hidden && (state.rid || cellFlow) && state.bm !== "dom") { state.t = (ts / 2600) % 1; draw(); }
   requestAnimationFrame(loop);
 }
 
@@ -1293,8 +1295,17 @@ function layers() {
     out.push(new deck.PolygonLayer({ id: "pick-cell", data: P.gis, getPolygon: (g) => poly(g), filled: false, stroked: true,
       getLineColor: C.fg, getLineWidth: 3, lineWidthUnits: "pixels", updateTriggers: { getLineColor: D.theme } }));
     const t = state.thr.ckt, vmax = P.max * fac("kt"), aw = (v) => 0.4 + 3.5 * Math.sqrt(v / vmax), shown = state.cv === "line" ? P.arrows.filter((d) => d.v >= t) : [];
-    out.push(new deck.PathLayer({ id: "pick-arrows", data: shown, pickable: true, getPath: (d) => d.path, getColor: () => OD_GRAD, getWidth: (d) => aw(d.v),
-      widthUnits: "pixels", capRounded: true, jointRounded: true, updateTriggers: { getWidth: [P.key, t] } }));
+    out.push(new deck.PathLayer({ id: "pick-arrows", data: shown, pickable: true, getPath: (d) => d.path, getColor: () => (state.anim ? OD_DIM : OD_GRAD), getWidth: (d) => aw(d.v),
+      widthUnits: "pixels", capRounded: true, jointRounded: true, updateTriggers: { getColor: state.anim, getWidth: [P.key, t] } }));
+    if (state.anim && shown.length) { // 흐르는 입자: 구역 화살표와 같은 방식 (경로마다 3개, 큰 화살표 400개까지), 색도 O 파랑 → D 빨강
+      if (P.tripsKey !== t) {
+        P.tripsKey = t;
+        P.trips = shown.slice(-400).flatMap((d) => [0, 1, 2].flatMap((k) => [0, -1].map((s) => ({ d, ts: d.path.map((_, j) => k / 3 + s + j / 40) }))));
+      }
+      out.push(new deck.TripsLayer({ id: "pick-particles", data: P.trips, getPath: (x) => x.d.path, getTimestamps: (x) => x.ts, getColor: () => OD_LIT,
+        getWidth: (x) => aw(x.d.v) * 0.75 + 1, widthUnits: "pixels", capRounded: true, jointRounded: true, trailLength: 0.22, fadeTrail: true,
+        currentTime: state.t, updateTriggers: { getWidth: [P.key, t] } }));
+    }
     out.push(new deck.IconLayer({ id: "pick-heads", data: shown, iconAtlas: ARROW,
       iconMapping: { a: { x: 0, y: 0, width: 64, height: 64, anchorX: 64, anchorY: 32, mask: true } },
       getIcon: () => "a", getPosition: (d) => d.path[40], getAngle: (d) => d.angle, getSize: (d) => aw(d.v) * 1.6 + 5, sizeUnits: "pixels",
