@@ -272,7 +272,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
       <div class="seg sm" id="cv" role="group" aria-label="격자별 이동 보기" hidden>
         <button data-cv="line" aria-pressed="true" title="고른 격자와 오가는 격자 사이 화살표 (임계치 이상)">선</button>
         <button data-cv="cell" aria-pressed="false" title="오가는 격자를 통근량 단계 색으로">격자</button>
-        <button data-cv="area" aria-pressed="false" title="오가는 격자 전부를 두른 범위를 매끈한 곡선으로">권역</button>
+        <button data-cv="area" aria-pressed="false" title="오가는 격자의 통근을 커널밀도(반경 5km)로">권역</button>
       </div>
       <div class="seg sm" role="group" aria-label="지도 보기">
         <button data-bm="flow" aria-pressed="true" title="생활권 사이 통근 흐름 화살표">흐름지도</button>
@@ -311,8 +311,9 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
       <div id="lg-proj" hidden></div>
       <div id="lg-dom" hidden></div>
       <div id="lg-hub" hidden></div>
+      <div id="lg-od" hidden><svg width="22" height="10" aria-hidden="true"><defs><linearGradient id="odg"><stop offset="0" stop-color="#1f6fd1"/><stop offset="1" stop-color="#e0352b"/></linearGradient></defs><path d="M1 5 H15" stroke="url(#odg)" stroke-width="2.5"/><path d="M14 1 L21 5 L14 9 Z" fill="#e0352b"/></svg><span>파랑 출발(O) → 빨강 도착(D) · 굵기 = 통근량</span></div>
       <div id="lg-cell" hidden><span class="lsw" id="lg-cell-sw"></span><span><span class="cw">출발</span> 격자별 통근 (적음 → 많음, 로그 단계)</span></div>
-      <div id="lg-area" hidden><span class="lsw" id="lg-area-sw"></span><span><span class="cw">출발</span> 격자 전부를 두른 범위 (통근 100%)</span></div>
+      <div id="lg-area" hidden><span class="lsw" id="lg-area-sw"></span><span><span class="cw">출발</span> 격자 통근 커널밀도 (반경 5km · 진할수록 통근이 몰린 곳)</span></div>
       <div id="lg-adm" hidden><span class="lsw" style="height: 0; border-top: 2px solid #111; box-shadow: 0 0 0 1px rgb(255 255 255 / 0.55)"></span><span>행정경계 (굵게 시도 · 가늘게 시군구)</span></div>
       <div id="lg-cmp" hidden><span class="lsw" style="background: linear-gradient(90deg, var(--kcb), var(--other), var(--kt))"></span><span id="lg-cmp-t"></span></div>
       <div><svg width="22" height="10" aria-hidden="true"><rect width="22" height="10" rx="2" fill="currentColor" opacity=".7"/></svg><span id="lg-c">중심지 (눌러서 덩어리 선택)</span></div>
@@ -358,7 +359,7 @@ tfoot td { position: sticky; bottom: 0; background: var(--panel); font-weight: 6
   </section>
 </div>
 
-<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "dcb90f268e70", "check": "ZgBUCzfpmMOjEKp2MrBSU3n3IB2Gi0ksyhwRhwpueae5nnwcOEq39XyhEWE2zg02yzzKkw=="}</script>
+<script>window.__site={"salt": "hrFHBvk1JtbLC9/TY4t+8g==", "iter": 600000, "ver": "dcb90f268e70", "check": "lHtle9FHBGPldGZFDVr0A+n7HLXZyxG5iO4NkOjHhL+2Y+jqtOqc5VHLWEmrEXCm9Ob7zw=="}</script>
 <style>
 #gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: var(--bg); }
 #gate form { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; width: min(340px, calc(100% - 32px)); box-sizing: border-box; display: grid; gap: 12px; }
@@ -427,6 +428,45 @@ const VWORLD = "https://api.vworld.kr/req/wmts/1.0.0/2FD0FCF6-DD85-4C04-8B40-73D
 const CELL_RAMP = ["#b7d3f6", "#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281"]; // 유입 = 파랑 순차 6단계 (다크는 거꾸로)
 const CELL_RAMP_OUT = ["#f6c4d8", "#efa0bf", "#e67aa5", "#d4558a", "#b0386c", "#82244f"]; // 유출 = 분홍 (우세지도 유출과 같은 계열)
 const cellRamp = () => (state.pick?.out ? CELL_RAMP_OUT : CELL_RAMP);
+// 격자별 이동 화살표: 출발(O) 파랑 → 도착(D) 빨강, 점마다 색 (curve() 41점). 유입·유출 같은 규칙
+const OD_O = [31, 111, 209], OD_D = [224, 53, 43];
+const OD_GRAD = Array.from({ length: 41 }, (_, i) => [...OD_O.map((o, j) => Math.round(o + ((OD_D[j] - o) * i) / 40)), 200]);
+const KDE_M = 5000; // 권역 커널밀도 반경 (m)
+
+// 격자별 이동 "권역" = 통근량 가중 커널밀도 (사분 커널, 반경 KDE_M, 0.5km 칸 — GIS 커널밀도와 같은 방식).
+// 칸 색은 밀도 값 대신 "밀도가 더 높은 칸들에 든 통근 몫" p: 0 = 핵심(진하게) → 0.99 = 바깥(옅게), 그 밖은 비움.
+// 값 그대로 칠하면 고른 격자 바로 옆 큰 값 하나에 색이 다 쏠려 범위가 안 보여서. 땅 위 거리라 줌과 무관
+function kde(P) {
+  const R = KDE_M / 1000, S = 0.5, CUT = 0.99, kx = 111.32 * Math.cos((G[P.gi][1] * Math.PI) / 180), ky = 110.57;
+  const pts = P.rows.map(([g, v]) => [G[g][0] * kx, G[g][1] * ky, v]); // km
+  const x0 = Math.min(...pts.map((q) => q[0])) - R, y1 = Math.max(...pts.map((q) => q[1])) + R;
+  const W = Math.ceil((Math.max(...pts.map((q) => q[0])) + R - x0) / S), H = Math.ceil((y1 - Math.min(...pts.map((q) => q[1])) + R) / S);
+  const d = new Float32Array(W * H), r = Math.ceil(R / S);
+  for (const [x, y, v] of pts) {
+    const ci = Math.floor((x - x0) / S), cj = Math.floor((y1 - y) / S); // 0행 = 북쪽 끝
+    for (let j = Math.max(0, cj - r); j <= Math.min(H - 1, cj + r); j++)
+      for (let i = Math.max(0, ci - r); i <= Math.min(W - 1, ci + r); i++) {
+        const dx = x0 + (i + 0.5) * S - x, dy = y1 - (j + 0.5) * S - y, q = 1 - (dx * dx + dy * dy) / (R * R);
+        if (q > 0) d[j * W + i] += v * q * q;
+      }
+  }
+  const idx = [];
+  for (let i = 0; i < d.length; i++) if (d[i] > 0) idx.push(i);
+  idx.sort((a, b) => d[b] - d[a]);
+  const tot = idx.reduce((a, i) => a + d[i], 0), cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d"), im = ctx.createImageData(W, H), cr = (D.theme === "dark" ? [...cellRamp()].reverse() : cellRamp()).map((c) => rgb(c));
+  let acc = 0;
+  for (const i of idx) {
+    const p = acc / tot;
+    if (p > CUT) break;
+    acc += d[i];
+    const t = (1 - p / CUT) * 5, k = Math.min(4, Math.floor(t)), f = t - k, a = cr[k], b = cr[k + 1];
+    im.data.set([0, 1, 2].map((c) => a[c] + (b[c] - a[c]) * f).concat(60 + 36 * t), i * 4);
+  }
+  ctx.putImageData(im, 0, 0);
+  return { cv, theme: D.theme, bounds: [x0 / kx, (y1 - H * S) / ky, (x0 + W * S) / kx, y1 / ky] };
+}
 let GW = null;
 const GIN = {};
 // 누르면 그 격자 하나, Ctrl(맥은 ⌘)+누르면 고른 격자에 더하거나 뺀다
@@ -452,20 +492,6 @@ async function pickCells(gis) {
   state.pick = { gis, gi, out, key: `${out}${gis}`, rows, arrows, max: rows.length ? rows[0][1] : 1, sum: rows.reduce((a, r) => a + r[1], 0),
     inner: rows.reduce((a, r) => a + ((Z[r[0]] >> 1) === (Z[gi] >> 1) ? r[1] : 0), 0) };
   syncControls(); draw();
-}
-
-// 격자별 이동 "권역": 출발 격자 전부와 고른 격자의 모서리 → 볼록 껍질 → 모서리 깎기(Chaikin) 6번 = 매끈한 바깥 곡선 하나
-// (11-16 사용자 요청으로 통근 100% — 멀리서 한두 명 오는 격자까지 들어가 크게 그려질 수 있음. 처음엔 가까운 순 50%·80% 두 개였음)
-function catchment(P) {
-  const k = Math.cos((G[P.gi][1] * Math.PI) / 180);
-  const pts = [...P.gis, ...P.rows.map((r) => r[0])].flatMap((g) => poly(g).map(([x, y]) => [x * k, y]));
-  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], up = [];
-  for (const q of pts) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
-  for (const q of pts.reverse()) { while (up.length > 1 && cr(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
-  let r = lo.slice(0, -1).concat(up.slice(0, -1));
-  for (let t = 0; t < 6; t++) r = r.flatMap((a, i) => { const b = r[(i + 1) % r.length]; return [[0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]]; });
-  return r.map(([x, y]) => [x / k, y]);
 }
 
 // 국토공간거점지도 유형 색 (거점지도 대시보드 TYPE_HEX 와 같음): 0 중심지Ⅰ · 1 Ⅱ · 2 Ⅲ-1 · 3 Ⅲ-2 · 4 주변부(안 그림)
@@ -867,8 +893,8 @@ function syncControls(updateRange = true) {
   $("lg-cell").hidden = !(state.cellMode && P && state.cv === "cell");
   $("lg-area").hidden = !(state.cellMode && P && state.cv === "area");
   const cr = cellRamp();
-  $("lg-area-sw").style.cssText = `background: ${cr[4]}55; border: 2px solid ${cr[4]}`;
-  $("lg-cell-sw").style.background = `linear-gradient(90deg, ${(isDark() ? [...cr].reverse() : cr).join(", ")})`;
+  $("lg-cell-sw").style.background = $("lg-area-sw").style.background = `linear-gradient(90deg, ${(isDark() ? [...cr].reverse() : cr).join(", ")})`;
+  $("lg-od").hidden = !(state.cellMode && P && state.cv === "line");
   $("lg-hub").hidden = !state.hub;
   $("lg-hub").innerHTML = "<small>국토공간거점지도 2025 (1km 격자)</small>" + HUB.slice(0, 4).map(([c, n]) => `<span><span class="lsw" style="background: ${c}"></span>${n}</span>`).join("");
   domLegend();
@@ -883,10 +909,10 @@ function syncControls(updateRange = true) {
   $("adm").setAttribute("aria-pressed", state.adm);
   $("lg-adm").hidden = !state.adm;
   const rel = state.dir === "in" ? "출발" : "도착", size = cmp() ? "KT·KCB 평균 비중" : "통근량";
-  $("lg-a").textContent = state.cellMode && state.pick ? (state.pick.out ? "굵기 = 고른 격자 → 도착 격자 통근량" : "굵기 = 출발 격자 → 고른 격자 통근량") : !inner() ? (cmp() ? "굵기 = KT·KCB 평균 비중" : `굵기 = ${pm() ? "도착" : state.dir === "in" ? "유입" : "유출"}량 · 색 = ${rel} ${U()}`)
+  $("lg-a").textContent = !inner() ? (cmp() ? "굵기 = KT·KCB 평균 비중" : `굵기 = ${pm() ? "도착" : state.dir === "in" ? "유입" : "유출"}량 · 색 = ${rel} ${U()}`)
     : `굵기 = ${size}${cmp() ? "" : { pc: " · 색 = 도착 중심지", cp: " · 색 = 출발 중심지", cc: " · 색 = 출발 중심지", pp: "" }[state.kind]}`;
   const dom = state.bm === "dom"; // 우세지도엔 화살표·중심지가 없으니 그 범례도 숨김
-  $("lg-a").parentElement.hidden = dom || !!(state.cellMode && (!state.pick || state.cv !== "line")); // 격자별 이동에서 화살표가 없을 땐 숨김
+  $("lg-a").parentElement.hidden = dom || !!state.cellMode; // 격자별 이동 화살표는 lg-od
   $("lg-cmp").hidden = !cmp() || dom;
   $("lg-cmp-t").textContent = `KCB 비중 큼 · 비슷 · KT 비중 큼 (${inner() ? "상대 차이" : "±5%p"})`;
   $("lg-c").parentElement.hidden = pm() || dom || !!state.cellMode || !ctrOn();
@@ -1255,26 +1281,24 @@ function layers() {
   }
 
   // 격자별 이동 살펴보기 (켜 있으면 구역 화살표는 안 그림) — 보기 방식 state.cv:
-  //  선 = 출발 격자 → 고른 격자 화살표 (임계치 이상, 굵기 = 양), 격자 = 출발 격자를 로그 6단계 파랑, 권역 = 출발 격자 전부를 두른 매끈한 범위
+  //  선 = 출발(O, 파랑) → 도착(D, 빨강) 화살표 (임계치 이상, 굵기 = 양), 격자 = 상대 격자를 로그 6단계 색, 권역 = 상대 격자 통근의 커널밀도 (반경 KDE_M)
   if (state.cellMode && state.pick) {
     const P = state.pick, cr = cellRamp(), ramp = (D.theme === "dark" ? [...cr].reverse() : cr).map((c) => rgb(c, 230)), lm = Math.log1p(P.max);
     if (state.cv === "cell") out.push(new deck.PolygonLayer({ id: "pick-from", data: P.rows, pickable: true, getPolygon: (r) => poly(r[0]), filled: true, stroked: false,
       getFillColor: (r) => ramp[Math.min(5, Math.floor((6 * Math.log1p(r[1])) / lm))], updateTriggers: { getFillColor: [P.key, D.theme, state.yr] } }));
     if (state.cv === "area" && P.rows.length) {
-      P.areas ??= [catchment(P)]; // P 는 고를 때마다 새로 만들어져 캐시도 새로
-      const c = rgb(cr[4]);
-      out.push(new deck.PolygonLayer({ id: "pick-area", data: P.areas, getPolygon: (a) => a, filled: true, stroked: true,
-        getFillColor: A(c, 45), getLineColor: A(c, 235), getLineWidth: 2.5, lineWidthUnits: "pixels" }));
+      if (P.kde?.theme !== D.theme) P.kde = kde(P); // P 는 고를 때마다 새로 만들어져 캐시도 새로
+      out.push(new deck.BitmapLayer({ id: "pick-kde", image: P.kde.cv, bounds: P.kde.bounds, _imageCoordinateSystem: deck.COORDINATE_SYSTEM.LNGLAT }));
     }
     out.push(new deck.PolygonLayer({ id: "pick-cell", data: P.gis, getPolygon: (g) => poly(g), filled: false, stroked: true,
       getLineColor: C.fg, getLineWidth: 3, lineWidthUnits: "pixels", updateTriggers: { getLineColor: D.theme } }));
-    const t = state.thr.ckt, vmax = P.max * fac("kt"), aw = (v) => 0.6 + 6 * Math.sqrt(v / vmax), shown = state.cv === "line" ? P.arrows.filter((d) => d.v >= t) : [];
-    out.push(new deck.PathLayer({ id: "pick-arrows", data: shown, pickable: true, getPath: (d) => d.path, getColor: A(C.fg, 160), getWidth: (d) => aw(d.v),
-      widthUnits: "pixels", capRounded: true, jointRounded: true, updateTriggers: { getColor: D.theme, getWidth: [P.key, t] } }));
+    const t = state.thr.ckt, vmax = P.max * fac("kt"), aw = (v) => 0.4 + 3.5 * Math.sqrt(v / vmax), shown = state.cv === "line" ? P.arrows.filter((d) => d.v >= t) : [];
+    out.push(new deck.PathLayer({ id: "pick-arrows", data: shown, pickable: true, getPath: (d) => d.path, getColor: () => OD_GRAD, getWidth: (d) => aw(d.v),
+      widthUnits: "pixels", capRounded: true, jointRounded: true, updateTriggers: { getWidth: [P.key, t] } }));
     out.push(new deck.IconLayer({ id: "pick-heads", data: shown, iconAtlas: ARROW,
       iconMapping: { a: { x: 0, y: 0, width: 64, height: 64, anchorX: 64, anchorY: 32, mask: true } },
-      getIcon: () => "a", getPosition: (d) => d.path[40], getAngle: (d) => d.angle, getSize: (d) => aw(d.v) * 1.6 + 6, sizeUnits: "pixels",
-      getColor: A(C.fg, 200), updateTriggers: { getColor: D.theme, getSize: [P.key, t] } }));
+      getIcon: () => "a", getPosition: (d) => d.path[40], getAngle: (d) => d.angle, getSize: (d) => aw(d.v) * 1.6 + 5, sizeUnits: "pixels",
+      getColor: [...OD_D, 235], updateTriggers: { getSize: [P.key, t] } }));
   }
   if (state.cellMode && !dom) return out;
 
